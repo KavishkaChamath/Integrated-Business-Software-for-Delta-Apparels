@@ -1,0 +1,64 @@
+.App {
+    font-family: Arial, sans-serif;
+  }
+  
+  .App-header {
+    background-color: #002e80;
+    padding: 20px;
+    text-align: center;
+    color: #e0e0e0;
+  }
+  
+  .App-logo {
+    height: 60px;
+  }
+  
+  .sidebar {
+    width: 200px;
+    float: left;
+    background-color: #e0e0e0;
+    padding: 10px;
+    /* height: 200px; */
+  }
+  
+  .sidebar-button {
+    width: 100%;
+    padding: 10px;
+    margin: 25px 0;
+    background-color: #6062a8;
+    border: none;
+    color: #000;
+    text-align: left;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .sidebar-button:hover {
+    background-color: #002e80;
+  }
+  
+  .main-content {
+    margin-left: 220px;
+    padding: 10px;
+  }
+  
+  .line-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f2f2f2;
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+  }
+  
+  .line-name, .line-detail {
+    width: 20%;
+    text-align: center;
+  }
+  .line-name1, .line-detail1 {
+    width: 20%;
+    text-align: center;
+    font-weight: 1000;
+  }
+  

@@ -1,0 +1,240 @@
+@import url('https://fonts.googleapis.com/css2? family=Poppins:wght@400;600;700&display=swap');
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Header styles */
+.header {
+    background: linear-gradient(to right, #040940, #0b0f5d);
+    height: 3vh;
+    display: flex;
+    align-items: center;
+    padding: 0 2em;
+    color: white;
+  }
+  
+  .header-content {
+    display: flex;
+    align-items: center;
+  }
+  
+  .header-logo {
+    width: 100px; /* Adjust size as needed */
+    height: auto;
+    margin-right: 1em;
+  }
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+.wrapper2 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+
+  /* background: url('./Images/img26.jpg') rgb(211, 211, 211) 50%  / cover no-repeat; */
+  background-size: 100vw 100vh; /* cover the entire viewport */
+  background-size: cover; /* add this to ensure the image is stretched to fit the full height */
+  width: auto; /* set width to 100% of viewport width */
+  height: 85vh; /* set height to 100% of viewport height */
+  flex-shrink: 0;
+  margin: 0; /* remove any margin */
+  padding: 0; /* remove any padding */
+  overflow: hidden; /* add this to prevent the page from becoming scrollable */
+  background-attachment: fixed;
+background: url('./Images/img30.jpg') no-repeat center 30% fixed;
+background-size: cover;
+width: 100vw;
+height: 100vh;
+margin: 0;
+padding: 0;
+overflow: hidden;
+/* Add a whitish overlay */
+background-color: rgba(177, 248, 253, 0.311);
+background-blend-mode: lighten;
+}
+
+.background-img{
+  opacity: 0.3;
+  background-size: cover;
+}
+
+
+.input-box1 {
+  margin-bottom: 1em;  
+  
+}
+
+.input-box1
+input[type='text'],
+input[type='password'] {
+  width: 100%;
+  padding: 0.5em;
+  margin: 0.5em 0;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  text-align: center;
+}
+
+/* Transparent box styles */
+.linetransparent-box {
+  background-image: url('./Images/img13.png');
+  background-position: center;
+  background-size: 100%;
+   /* Adjust transparency as needed */
+    padding: 2em; /* Adjust padding as needed */
+    border-radius: 8px; /* Optional: add border radius */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional: add shadow for depth */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content:flex-start;
+    width: 70%; /* Adjust width as needed */
+    max-width: 500px; /* Adjust maximum width as needed */
+    height: 75%; 
+  }
+
+  .linetransparent-box::before {
+    /* content: ''; */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.123); /* adjust the alpha channel value here (0 = fully transparent, 1 = fully opaque) */
+    /* Add these styles to make the background image responsive */
+
+    object-fit: cover;
+  }
+  .linetransparent-box img{
+    width: 100%;
+    padding-top: 0.5cm;
+  }
+  .linetransparent-box h2{
+    color: #ffffff;
+    font-weight: 1000;
+    text-align: center;
+    font-size:180%;
+  }
+
+  /*Admin Log*/
+  .admintransparent-box {
+    background-image: url('./Images/img24.png');
+    background-position: center;
+    background-size: 100%;
+     /* Adjust transparency as needed */
+      padding: 2em; /* Adjust padding as needed */
+      border-radius: 8px; /* Optional: add border radius */
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional: add shadow for depth */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content:flex-start;
+      width: 70%; /* Adjust width as needed */
+      max-width: 500px; /* Adjust maximum width as needed */
+      height: 75%; 
+      
+    }
+  
+    .admintransparent-box::before {
+      /* content: ''; */
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.123); /* adjust the alpha channel value here (0 = fully transparent, 1 = fully opaque) */
+      /* Add these styles to make the background image responsive */
+  
+      object-fit: cover;
+    }
+    .admintransparent-box img{
+      width: 100%;
+      padding-top: 0.5cm;
+
+    }
+    .admintransparent-box h2{
+      color: #ffffff;
+      font-weight: 1000;
+      text-align: center;
+      font-size:220%;
+    }
+
+
+      /*IT Section Log*/
+  .ITtransparent-box {
+    background-image: url('./Images/img25.png');
+    background-position: center;
+    background-size: 100%;
+     /* Adjust transparency as needed */
+      padding: 2em; /* Adjust padding as needed */
+      border-radius: 8px; /* Optional: add border radius */
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional: add shadow for depth */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content:flex-start;
+      width: 70%; /* Adjust width as needed */
+      max-width: 500px; /* Adjust maximum width as needed */
+      height: 75%; 
+    }
+  
+    .ITtransparent-box::before {
+      /* content: ''; */
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.123); /* adjust the alpha channel value here (0 = fully transparent, 1 = fully opaque) */
+      /* Add these styles to make the background image responsive */
+  
+      object-fit: cover;
+    }
+    .ITtransparent-box img{
+      width: 100%;
+      padding-top: 0.5cm;
+      
+    }
+    .ITtransparent-box h2{
+      color: #ffffff;
+      font-weight: 1000;
+      text-align: center;
+      font-size:180%;
+    }
+
+
+
+button[type='submit'] {
+  width: 100%;
+  padding: 0.5em;
+  background-color: #3b3f63;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button[type='submit']:hover {
+  background-color: #5d5c5f;
+}
+
+.remember-forgot {
+  display: flex;
+  margin-bottom: 1em;
+  color: #c2c2c2;
+}
+
+.remember-forgot a{
+  color: white;
+  font-style: italic;
+  text-decoration: none;
+  font-size: medium;
+}

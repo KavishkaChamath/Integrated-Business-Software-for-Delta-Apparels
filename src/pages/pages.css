@@ -1,0 +1,359 @@
+
+.Admindp {
+    background-image: url('./images/Admin.jpg'); /* Replace with your image file name */
+    background-position: center;
+    background-size: cover;
+    opacity: 0.35;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50vh; /* set the height to 100% of the viewport */
+    width: 50vw; /* set the width to 100% of the viewport */
+    margin-top: 5%;
+    padding-right: 25%;
+  }
+  /* .wrapper{
+    height: 80vh;
+  } */
+
+  .holder{
+    background: url('../components/Images/img30.jpg') no-repeat center 30% fixed;
+    background-size: 100vw 100vh; /* cover the entire viewport */
+    background-size: cover; /* add this to ensure the image is stretched to fit the full height */
+    width: auto; /* set width to 100% of viewport width */
+    height: 85vh; /* set height to 100% of viewport height */
+    flex-shrink: 0;
+    margin: 0; /* remove any margin */
+    padding: 0; /* remove any padding */
+    overflow: hidden; /* add this to prevent the page from becoming scrollable */
+    background-attachment: fixed;
+    background-size: cover;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    /* Add a whitish overlay */
+    background-color: rgba(177, 248, 253, 0.311);
+    background-blend-mode: lighten;
+  }
+  .container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    height: 300px; /* Adjust the height as needed */
+  }
+
+  .n1 {
+    flex: 1;
+    max-width: 300px; /* Adjust the max-width as needed */
+    height: 400px;
+    max-height: 800px;
+    margin: 0 10px; /* Adjust the margin as needed */
+    background-color: lightblue;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    margin-top: 30%;
+    background: url('../components/Images/img24.png');
+    background-position: center;
+    background-size: 100%;
+
+  }
+  .n2 {
+    flex: 1;
+    max-width: 300px; /* Adjust the max-width as needed */
+    height: 400px;
+    max-height: 800px;
+    margin: 0 10px; /* Adjust the margin as needed */
+    background-color: lightblue;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    margin-top: 30%;
+    background: url('../components/Images/img25.png') ;
+    background-position: center;
+    background-size: 100%;
+  }
+  .n3 {
+    flex: 1;
+    max-width: 300px; /* Adjust the max-width as needed */
+    height: 400px;
+    max-height: 800px;
+    margin: 0 10px; /* Adjust the margin as needed */
+    background-color: lightblue;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    margin-top: 30%;
+    background: url('../components/Images/img13.png');
+    background-position: center;
+    background-size: 100%;
+  }
+
+  a{
+    color: rgb(225, 225, 225);
+    text-decoration: none;
+    font-weight: 900;
+    font-size:x-large
+  }
+
+
+  .wrapper3 {
+    display: flex;
+    height: 100vh;
+  
+    /* background: url('./Images/img26.jpg') rgb(211, 211, 211) 50%  / cover no-repeat; */
+    background-size: 100vw 100vh; /* cover the entire viewport */
+    background-size: cover; /* add this to ensure the image is stretched to fit the full height */
+    width: auto; /* set width to 100% of viewport width */
+    height: 85vh; /* set height to 100% of viewport height */
+    flex-shrink: 0;
+    margin: 0; /* remove any margin */
+    padding: 0; /* remove any padding */
+    overflow: hidden; /* add this to prevent the page from becoming scrollable */
+    background-attachment: fixed;
+  background: url('../components/Images/8636.jpg') no-repeat center 30% fixed;
+  background-size: cover;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  /* Add a whitish overlay */
+  background-color: rgba(0, 0, 0, 0.544);
+  background-blend-mode: lighten;
+  }
+  
+  .background-img{
+    opacity: 0.3;
+    background-size: cover;
+  }
+
+  .logo-box {
+    background-image: url('../components/pic.png');
+    background-size: 100%;
+    background-color: rgba(255, 255, 255, 0.232);
+      width: 60%; /* Adjust width as needed */
+      max-width: 500px; /* Adjust maximum width as needed */
+      height: 25%; 
+      max-height: 250px;
+      padding-left: 0em;
+    }
+
+.Ithome{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 85vh;
+
+}
+@media (max-width: 885px) {
+  .Ithome {
+    display: grid;
+    grid-template-rows: repeat(3, 1fr);
+    justify-items: center;
+
+  }
+}
+@media (max-width: 885px) {
+  .Ithome button{
+    height: 100px;
+    width: 600px;
+
+  }
+}
+@media (max-width: 600px) {
+  .Ithome button{
+    height: 90px;
+    width: 350px;
+
+  }
+}
+
+
+.Ithome2{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 85vh;
+
+}
+@media (max-width: 885px) {
+  .Ithome2 {
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  justify-items: center;
+
+  }
+}
+@media (max-width: 885px) {
+  .Ithome2 button{
+    height: 100px;
+    width: 600px;
+    
+  }
+}
+@media (max-width: 600px) {
+  .Ithome2 button{
+    height: 90px;
+    width: 350px;
+
+  }
+}
+
+
+
+.empbutton, .orderbutton, .cutbutton {
+
+  margin: 0 10px; /* Add some space between the buttons */
+  padding: 20px; /* Increase padding to make the buttons larger */
+  font-size: 30px; /* Increase font size */
+  width: 250px; /* Set a fixed width for the buttons */
+  height: 400px; /* Set a fixed height for the buttons */
+  text-align: center;
+  font-weight: 900;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 5px; /* Optional: add rounded corners */
+  background-color: rgba(37, 96, 148, 0.795); /* Optional: change the background color */
+  color: white; /* Optional: change the text color */
+  cursor: pointer; /* Optional: change cursor to pointer on hover */
+}
+
+.empbutton:hover, .orderbutton:hover, .cutbutton:hover {
+  background-color: rgba(50, 132, 205, 0.795); /* Optional: change background color on hover */
+}
+
+.adminbutton {
+  margin: 0 10px; /* Add some space between the buttons */
+  padding: 20px; /* Increase padding to make the buttons larger */
+  font-size: 30px; /* Increase font size */
+  width: 25%;
+  /*max-width: 300px; /* Adjust the max-width as needed */
+  height: 400px;
+  max-height: 800px;
+  text-align: center;
+  font-weight: 900;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 20px; /* Optional: add rounded corners */
+  background: url('../components/Images/img24.png');
+  color: white; /* Optional: change the text color */
+  cursor: pointer; /* Optional: change cursor to pointer on hover */
+  background-color: lightblue;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  background-position: center;
+  background-size: 100%;
+}
+.itsecbutton{
+  margin: 0 10px; /* Add some space between the buttons */
+  padding: 20px; /* Increase padding to make the buttons larger */
+  font-size: 30px; /* Increase font size */
+  width: 25%;
+ /* max-width: 300px; /* Adjust the max-width as needed */
+  height: 400px;
+  max-height: 800px;
+  text-align: center;
+  font-weight: 900;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 20px; /* Optional: add rounded corners */
+  background: url('../components/Images/img25.png');
+  color: white; /* Optional: change the text color */
+  cursor: pointer; /* Optional: change cursor to pointer on hover */
+  background-color: lightblue;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  background-position: center;
+  background-size: 100%;
+}
+.linebutton {
+  margin: 0 10px; /* Add some space between the buttons */
+  padding: 20px; /* Increase padding to make the buttons larger */
+  font-size: 30px; /* Increase font size */
+  width: 25%;
+  /*max-width: 300px; /* Adjust the max-width as needed */
+  height: 400px;
+  max-height: 800px;
+  text-align: center;
+  font-weight: 900;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 20px; /* Optional: add rounded corners */
+  background: url('../components/Images/img13.png')  no-repeat;
+  color: white; /* Optional: change the text color */
+  cursor: pointer; /* Optional: change cursor to pointer on hover */
+  background-color: lightblue;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  background-position: center;
+  background-size: 100%;
+}
+
+.adminbutton:hover{
+  background: url('../components/Images/img24.png');
+  background-size: 120%;
+  background-position: center;
+}
+.itsecbutton:hover{
+  background: url('../components/Images/img25.png');
+  background-size: 120%;
+  background-position: center;
+}
+.linebutton:hover{
+  background: url('../components/Images/img13.png');
+  background-size: 120%;
+  background-position: center;
+}
+.select-line-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 50px;
+}
+
+.select-line-label {
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+.select-line-select {
+  padding: 5px;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.select-line-button {
+  padding: 5px 15px;
+  font-size: 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.select-line-button:hover {
+  background-color: #45a049;
+}
