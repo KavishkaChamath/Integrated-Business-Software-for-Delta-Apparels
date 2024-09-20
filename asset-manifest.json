@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/Integrated-Business-Software-for-Delta-Apparels/static/css/main.d2ab5ea1.css",
-    "main.js": "/Integrated-Business-Software-for-Delta-Apparels/static/js/main.6339acb5.js",
+    "main.js": "/Integrated-Business-Software-for-Delta-Apparels/static/js/main.fe451880.js",
     "static/js/453.1d44eca4.chunk.js": "/Integrated-Business-Software-for-Delta-Apparels/static/js/453.1d44eca4.chunk.js",
     "static/media/8636.jpg": "/Integrated-Business-Software-for-Delta-Apparels/static/media/8636.6399ebac06ac27a897a0.jpg",
     "static/media/img25.png": "/Integrated-Business-Software-for-Delta-Apparels/static/media/img25.59fa162dd0baf9a3915c.png",
@@ -13,11 +13,11 @@
     "static/media/img21.png": "/Integrated-Business-Software-for-Delta-Apparels/static/media/img21.b7fe25510fa30bef7df4.png",
     "index.html": "/Integrated-Business-Software-for-Delta-Apparels/index.html",
     "main.d2ab5ea1.css.map": "/Integrated-Business-Software-for-Delta-Apparels/static/css/main.d2ab5ea1.css.map",
-    "main.6339acb5.js.map": "/Integrated-Business-Software-for-Delta-Apparels/static/js/main.6339acb5.js.map",
+    "main.fe451880.js.map": "/Integrated-Business-Software-for-Delta-Apparels/static/js/main.fe451880.js.map",
     "453.1d44eca4.chunk.js.map": "/Integrated-Business-Software-for-Delta-Apparels/static/js/453.1d44eca4.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.d2ab5ea1.css",
-    "static/js/main.6339acb5.js"
+    "static/js/main.fe451880.js"
   ]
 }
