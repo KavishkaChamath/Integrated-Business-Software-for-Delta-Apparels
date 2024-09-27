@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SignOut from '../components/SignOut';
 import Titlepic from '../components/Titlepic';
 import { database } from '../Firebase'; // Adjust the import path as needed
-import { ref, get, set,remove, onValue, serverTimestamp } from 'firebase/database';
+import { ref, get, set,remove, onValue, serverTimestamp, push } from 'firebase/database';
 import Modal from '../components/Line/Model';
 import BreakTimeModal from '../components/Line/BreakTimeModel';
 import RejectionModal from '../components/Line/PasswordModel';
 import {  query, orderByChild, equalTo, update, runTransaction } from 'firebase/database';
-import Timer from '../components/Line/Timer';
+
+import { Timestamp } from 'firebase/firestore';
 
 export default function LineHome() {
-  const [orderNumber, setOrderNumber] = useState('');
-  const [bundleId, setBundleId] = useState('');
-   const [italyPo, setItalyPo] = useState('');
+
   // const[productionPO,serProductioPo]=useState('');
   const [firstQuality, setFirstQuality] = useState(0);
 
@@ -23,14 +22,9 @@ export default function LineHome() {
   const [timer, setTimer] = useState(0);
   const [intervalId, setIntervalId] = useState(null);
 
-  // const location = useLocation();
-  // const { selectedLine, orderNumber: prevOrderNumber, italyPo: prevItalyPo, bundleId: prevBundleId } = location.state || { selectedLine: 'Line 1' };
 
   const [id, setId] = useState('');
   const [employees, setEmployees] = useState([]);
-
-  //const navigate = useNavigate();
-
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBreakTimeModalOpen, setIsBreakTimeModalOpen] = useState(false);
@@ -93,10 +87,7 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
       return selectedBundle !== "" || (selectedIncompleteBundle !== "" || selectedBundle !== "");
     };
 
-  const handleStart = async ()  => {
-    setIsStarted(true);
-    setIsPaused(false);
-    setIsFinished(false);
+  const handleStart = async ()  => { 
 
     const id = setInterval(() => {
       setTimer(prevTime => prevTime + 1);
@@ -104,6 +95,39 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
     setIntervalId(id);
 
     const currentDate = new Date().toISOString().split('T')[0];
+
+    const previousSelectedIncompleteBundle = selectedIncompleteBundle;
+
+    // Define the reference for dailyUpdates using the current date and selected line
+    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+
+    let totalMembers;
+      try {
+        const snapshot = await get(dailyUpdatesRef);
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const guestMembers = data.guestMembers || 0;  // Get guestMembers or default to 0
+            const hostMembers = data.hostMembers || 0;    // Get hostMembers or default to 0
+            
+            totalMembers = guestMembers + hostMembers;
+            if(totalMembers=== 0){
+              alert("Can't start order without any employees.");
+              return;
+            }  
+        } else {
+            console.log("No data available for the given date and line");
+            alert("Can't start order without any employees.");
+            return; // Return 0 if no data is found
+        }
+    } catch (error) {
+        console.error("Error retrieving data: ", error);
+        return;
+    }
+    const totalRunTimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime/${totalMembers}`); 
+
+    setIsStarted(true);
+    setIsPaused(false);
+    setIsFinished(false);
 
     let inqueueRef;
     let operationsRef;
@@ -119,8 +143,11 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
       console.error("No valid selection made.");
       return;
     }
-    const snapshot = await get(operationsRef);
+    
+    setSelectedIncompleteBundle("");
 
+    const snapshot = await get(operationsRef);
+    
     if (!snapshot.exists()) {
     const inqueueSnapshot = await get(inqueueRef);
     let noOfPieces = 0;
@@ -149,56 +176,332 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
       styleNumber: orderData.styleNumber,
       colour: orderData.colour,
       colourCode: orderData.colourCode,
+      Smv: orderData.smv,
       "1stQuality": 0,
       "2ndQuality": 0,
       "Rejection": 0,
       noOfPieces: noOfPieces, // Set noOfPieces from Inqueue
-      startDate: serverTimestamp(),
-      endDate: '',
-      timer: 0,
+      orderStartTime:serverTimestamp(),
     };
   
-
       set(operationsRef, newData)
       .then(() => {
         console.log('Data saved successfully to current operations node!');
        // remove(inqueueRef);
       })
+      
       .catch((error) => {
           console.error('Error adding data:', error);
         });
-      // Use a transaction to ensure atomicity
-    // await runTransaction(inqueueRef, (currentData) => {
-    //   if (currentData) {
-    //     return null; // Delete data by returning null
-    //   } else {
-    //     return currentData; // No data to delete
-    //   }
-    // }).then(async () => {
-    //   await set(operationsRef, newData);
-    //   console.log('Data saved successfully to current operations node!');
-    // }).catch((error) => {
-    //   console.error('Error handling transaction:', error);
-    // });
+      
+        try {
+          // Fetch the current data from the dailyUpdatesRef
+          const snapshot = await get(dailyUpdatesRef);
+          const runTimeSnapshot = await get(totalRunTimeRef);
+          const dailyData = snapshot.val();
+          const runData = runTimeSnapshot.val();
+
+          if (dailyData.pauseTime!=="") {
+            
+            const startTime = dailyData.startTime || serverTimestamp();
+            const endTime = dailyData.endTime || serverTimestamp(); // If endTime doesn't exist, use the current time
+            const existingPauseTime = dailyData.pauseTime || 0;
+            const existingRunTime = runData.runTime || 0;
+            const status = dailyData.isPaused
+        
+            const  operationsSmvRef = ref(database, `currentOperations/${selectedLine}/${selectedBundle}/Smv`);
+            const snap = await get(operationsSmvRef);
+            let smv ="";
+            let dailySmv;
+            if(snap.exists()){
+                  smv = snap.val()
+            }
+            const dailySmvRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Smv`);
+            const dailySnap = await get(dailySmvRef);
+            if(dailySnap.exists()){
+              dailySmv = dailySnap.val();
+            }
+            if(smv!==dailySmv){
+              await handleCalculateAndSaveEffiency(selectedLine);
+              await update(dailyUpdatesRef, {
+                Smv: smv,
+                total1stQuality:"",
+              }) 
+            }
+            const endMillis = new Date(endTime).getTime();
+            let timeDifferenceMillis; 
+            const startMillis = new Date().getTime();  // Convert startTime to milliseconds
+            timeDifferenceMillis = startMillis - endMillis;   // Time from start to pause
+
+            // Check if startTime already exists
+            if (status) {
+              console.log("Already started order in this line");
+              // Handle cases where time difference is negative (should not happen)
+              if (timeDifferenceMillis < 0) {
+                console.error("Invalid data: endTime is earlier than startTime.");
+                return;
+              }
+              // Convert runtime to seconds
+              const newPauseTimeSeconds = Math.floor(timeDifferenceMillis / 1000);
+              console.log("new "+ newPauseTimeSeconds)
+              // Add the new runtime to the accumulated runtime
+              const newPauseTime = existingPauseTime+ newPauseTimeSeconds;
+
+              // Update the dailyUpdatesRef with the new pause time
+              await update(dailyUpdatesRef, {
+                pauseTime: newPauseTime, // Update with calculated pause time
+                startTime: serverTimestamp(), // Optionally update the startTime to resume
+                isPaused: false,
+              })
+                .then(() => {
+                  console.log('Pause time calculated and updated successfully.');
+                  setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+                })
+                .catch((error) => {
+                  console.error('Error updating pause time:', error);
+                });
+            } else {
+              console.log("previous order didnt pause "+existingRunTime)
+              const currenttMillis = new Date().getTime();  // Convert startTime to milliseconds
+              const start = new Date(startTime).getTime(); 
+              timeDifferenceMillis = currenttMillis - start; 
+
+              // Handle cases where time difference is negative (should not happen)
+              if (timeDifferenceMillis < 0) {
+                console.error("Invalid data: endTime is earlier than startTime.");
+                return;
+              }
+              // Convert runtime to seconds
+              const newRunTimeSeconds = Math.floor(timeDifferenceMillis / 1000);
+              console.log("new "+newRunTimeSeconds)
+
+              // Add the new runtime to the accumulated runtime          
+               const newRunTime = existingRunTime+ newRunTimeSeconds;
+ 
+              // Update the dailyUpdatesRef with the new pause time
+              
+              await update(totalRunTimeRef, {
+                runTime: newRunTime, // Update with calculated pause time
+              }) 
+              await update(dailyUpdatesRef, {
+               // runTime: newRunTime, // Update with calculated pause time
+                startTime: serverTimestamp(), // Optionally update the endTime to resume
+              })
+                .then(() => {
+                  console.log('Run time calculated and updated successfully.');
+                  setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+                })
+                .catch((error) => {
+                  console.error('Error updating pause time:', error);
+                });
+            }
+          } else {
+            // If no data exists at the path, set the fields with default values
+            //aluth dawasak aluth order ekak
+            const  operationsSmvRef = ref(database, `currentOperations/${selectedLine}/${selectedBundle}/Smv`);
+      
+            const snap = await get(operationsSmvRef);
+            let smv ="";
+            if(snap.exists()){
+               smv = snap.val()
+            }
+            await update(dailyUpdatesRef, {
+              startTime: serverTimestamp(),
+              endTime: serverTimestamp(),
+              ///runTime: 0,
+              pauseTime: 0,
+              //isPaused:false
+              Smv: smv,
+            })
+            // await update(totalRunTimeRef, {
+            //   runTime: 0, // Update with calculated pause time
+            // }) ;
+            console.log("No data found. Default values were set.");
+          }
+          
+        } catch (error) {
+          console.error("Error checking or updating dailyUpdates:", error);
+        }
     }else{
-      console.log("Starting incomplete order.")
-    }
-  };
 
-  const handlePauseResume = () => {
-    setIsPaused(!isPaused);
+    console.log("Starting incomplete order. Data already exists in the operations node.");
 
-    if (!isPaused) {
-      clearInterval(intervalId);
+    const dailySnapshot = await get(dailyUpdatesRef);
+    const dailyData = dailySnapshot.val();
+    const runTimeSnapshot = await get(totalRunTimeRef);
+    const runData = runTimeSnapshot.val();
+
+
+    if (dailyData.pauseTime!=="") {
+      const startTime = dailyData.startTime || serverTimestamp();
+      const endTime = dailyData.endTime || serverTimestamp(); // If endTime doesn't exist, use the current time
+      const existingPauseTime = dailyData.pauseTime || 0;
+      const existingRunTime = runData.runTime || 0;
+      const status = dailyData.isPaused
+
+      const  operationsSmvRef = ref(database, `currentOperations/${selectedLine}/${selectedIncompleteBundle}/Smv`);
+      const snap = await get(operationsSmvRef);
+      let smv ="";
+      let dailySmv;
+      if(snap.exists()){
+            smv = snap.val()
+      }
+      const dailySmvRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Smv`);
+      const dailySnap = await get(dailySmvRef);
+      if(dailySnap.exists()){
+        dailySmv = dailySnap.val();
+      }
+      if(smv!==dailySmv){
+        await handleCalculateAndSaveEffiency(selectedLine);
+        await update(dailyUpdatesRef, {
+          Smv: smv,
+          total1stQuality:"",
+        })
+      }
+      const endMillis = new Date(endTime).getTime();
+      let timeDifferenceMillis; 
+     const startMillis = new Date().getTime();  // Convert startTime to milliseconds
+     timeDifferenceMillis = startMillis - endMillis;   // Time from start to pause
+
+     if(status){
+      console.log("order pause "+existingPauseTime)
+          
+      // Handle cases where time difference is negative (should not happen)
+      if (timeDifferenceMillis < 0) {
+        console.error("Invalid data: endTime is earlier than startTime.");
+        return;
+      }
+      // Convert runtime to seconds
+      const newPauseTimeSeconds = Math.floor(timeDifferenceMillis / 1000);
+      console.log("new "+newPauseTimeSeconds)
+      // Add the new runtime to the accumulated runtime
+      const newPauseTime = existingPauseTime+ newPauseTimeSeconds;
+
+      // Update the dailyUpdatesRef with the new pause time
+      await update(dailyUpdatesRef, {
+        pauseTime: newPauseTime, // Update with calculated pause time
+        startTime: serverTimestamp(), // Optionally update the startTime to resume
+        isPaused: false,
+      })
+        .then(() => {
+          console.log('Pause time calculated and updated successfully.');
+          setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+        })
+        .catch((error) => {
+          console.error('Error updating pause time:', error);
+        });
+     }else{
+      console.log("order Run time"+existingRunTime)
+      const currenttMillis = new Date().getTime();  // Convert startTime to milliseconds
+      const start = new Date(endTime).getTime(); 
+      timeDifferenceMillis = currenttMillis - start; 
+
+       // Handle cases where time difference is negative (should not happen)
+       if (timeDifferenceMillis < 0) {
+        console.error("Invalid data: endTime is earlier than startTime.");
+        return;
+      }
+      // Convert runtime to seconds
+      const newRunTimeSeconds = Math.floor(timeDifferenceMillis / 1000);
+      console.log("new "+newRunTimeSeconds)
+      // Add the new runtime to the accumulated runtime
+      const newRunTime = existingRunTime+ newRunTimeSeconds;
+
+      // Update the dailyUpdatesRef with the new pause time
+      await update(dailyUpdatesRef, {
+        //runTime: newRunTime, // Update with calculated pause time
+        startTime: serverTimestamp(), // Optionally update the endTime to resume
+      })
+      await update(totalRunTimeRef, {
+        runTime: newRunTime, // Update with calculated pause time
+      }) 
+        .then(() => {
+          console.log('Run time calculated and updated successfully.');
+          setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+        })
+        .catch((error) => {
+          console.error('Error updating pause time:', error);
+        });
+     }
+     
     } else {
-      const id = setInterval(() => {
-        setTimer(prevTime => prevTime + 1);
-      }, 1000);
-      setIntervalId(id);
+      console.log("This is first order of today.");
+      const  operationsSmvRef = ref(database, `currentOperations/${selectedLine}/${selectedIncompleteBundle}/Smv`);
+      const snap = await get(operationsSmvRef);
+      let smv ="";
+      if(snap.exists()){
+            smv = snap.val()
+      }
+      await update(dailyUpdatesRef, {
+        startTime: serverTimestamp(),
+        endTime: serverTimestamp(),
+        //runTime: 0,
+        pauseTime: 0,
+       // isPaused: false
+       Smv: smv,
+      })
+      await update(totalRunTimeRef, {
+        runTime: 0, // Update with calculated pause time
+      }) 
+      .then(() => {
+        console.log("Start time set with default values.");
+        setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+      });
+    }
     }
   };
+  
+  const handlePauseResume = () => {
+    const previousSelectedIncompleteBundle = selectedIncompleteBundle;
 
-  const handleFinish = () => {
+    const currentDate = new Date().toISOString().split('T')[0];
+    // Define the reference for dailyUpdates using the current date and selected line
+    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+
+    setSelectedIncompleteBundle("");
+  
+    if (!isPaused) {
+      // Pausing: update endTime and stop the timer
+      clearInterval(intervalId);
+  
+      update(dailyUpdatesRef , {
+        endTime: serverTimestamp(),  // Save the end time
+        isPaused:true
+      })
+      .then(() => {
+        console.log("End time and isPaused status updated in the database.");
+        setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+        calculateRunTime(selectedLine);  // Calculate runtime after updating end time
+      })
+      .catch((error) => {
+        console.error("Failed to update endTime or isPaused:", error);
+      });
+    } else {
+      // Resuming: update pauseTime and restart the timer
+      update(dailyUpdatesRef , {
+        startTime: serverTimestamp(),  // Save the current pause time
+        isPaused: false
+      })
+      .then(() => {
+        console.log("Pause time and isPaused status updated in the database.");
+        setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+        calculatePauseTime (selectedLine);
+        // Restart the timer
+        const id = setInterval(() => {
+          setTimer((prevTime) => prevTime + 1);
+        }, 1000);
+        setIntervalId(id);
+      })
+      .catch((error) => {
+        console.error("Failed to update pauseTime or isPaused:", error);
+      });
+    }
+  
+    setIsPaused(!isPaused);  // Toggle pause/resume state
+  };
+  
+  
+  const handleFinish = async() => {
     setIsFinished(true);
     setIsStarted(false);
     setIsPaused(false);
@@ -210,7 +513,12 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
     setPendingValue(null);
     setOrderData(null);
     setIncompleteBundleData(null);
-   // const operationsRef = ref(database, `currentOperations/${orderNumber}`);
+   
+    const currentDate = new Date().toISOString().split('T')[0];
+    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+    await update(dailyUpdatesRef ,{
+      isPaused: true,
+    });
 
 
   };
@@ -227,176 +535,291 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
     return `${minutes}m ${secs}s`;
   };
 
- 
- 
   
-  const checkAndUpdateGuestMembers = (lineNumber, changeInGuestMembers, id) => {
-    const employeesRef = ref(database, 'employees');
+  const calculateRunTime = async (selectedLine) => {
+
+    const previousSelectedIncompleteBundle = selectedIncompleteBundle;
+
+    const currentDate = new Date().toISOString().split('T')[0];
   
-    // Query the database to see if there's an employee with the given ID
-    const queryRef = query(employeesRef, orderByChild('employeeNumber'), equalTo(id));
-  
-    get(queryRef)
-      .then((snapshot) => {
+    // Define the reference for dailyUpdates using the current date and selected line
+    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+    let totalMembers;
+      try {
+        const snapshot = await get(dailyUpdatesRef);
         if (snapshot.exists()) {
-          console.log('Employee found:', snapshot.val());
-  
-          // Create a reference to a temporary node to get the server timestamp
-          const tempRef = ref(database, 'serverTime/temp');
-  
-          // Set the server timestamp temporarily to fetch it
-          return set(tempRef, { timestamp: serverTimestamp() })
-            .then(() => get(tempRef))
-            .then((timestampSnapshot) => {
-              if (timestampSnapshot.exists()) {
-                const serverTimestampValue = timestampSnapshot.val().timestamp;
-                const serverDate = new Date(serverTimestampValue);
-  
-                // Format the server date to 'YYYY-MM-DD'
-                const currentDate = serverDate.toISOString().split('T')[0];
-                const workingMembersRef = ref(database, `dailyUpdates/${currentDate}/${lineNumber}`);
-  
-                // Get the current data for the specific date and line
-                return get(workingMembersRef)
-                  .then((workingSnapshot) => {
-                    let currentGuestMembers = 0;
-  
-                    if (workingSnapshot.exists()) {
-                      const data = workingSnapshot.val();
-                      currentGuestMembers = data.guestMembers || 0;
-                    }
-  
-                    // Ensure both currentGuestMembers and changeInGuestMembers are numbers
-                    if (isNaN(currentGuestMembers) || isNaN(changeInGuestMembers)) {
-                      throw new Error('Invalid number provided for updating guest members.');
-                    }
-  
-                    // Update the members count
-                    const updatedGuestMembers = currentGuestMembers + changeInGuestMembers;
-  
-                    // Ensure the result is a valid number
-                    if (isNaN(updatedGuestMembers)) {
-                      throw new Error('The updated guest members count resulted in NaN.');
-                    }
-  
-                    // Update the database with the new guestMembers count
-                    return update(workingMembersRef, {
-                      guestMembers: updatedGuestMembers,
-                    });
-                  })
-                  .then(() => {
-                    console.log(`Guest members count updated successfully for line: ${lineNumber} on date: ${currentDate}`);
-                    alert("Employee added as a guest to the line");
-                    setId(''); // Clear input after update
-                  })
-                  .catch((error) => {
-                    console.error('Error updating guest members:', error);
-                  })
-                  .finally(() => {
-                    // Clean up the temporary node
-                    //console.log('Attempting to remove temporary server timestamp node.');
-                    remove(tempRef).then(() => {
-                      //console.log('Temporary server timestamp node removed successfully.');
-                    }).catch((error) => {
-                      console.error('Error removing temporary server timestamp node:', error);
-                    });
-                  });
-              } else {
-                console.error('Error fetching server timestamp.');
-                alert('Error fetching server timestamp.');
-                throw new Error('Server timestamp not found.');
-              }
-            })
-            .catch((error) => {
-              console.error('Error setting or fetching server timestamp:', error);
-            });
+            const data = snapshot.val();
+            const guestMembers = data.guestMembers || 0;  // Get guestMembers or default to 0
+            const hostMembers = data.hostMembers || 0;    // Get hostMembers or default to 0
+            
+            totalMembers = guestMembers + hostMembers;
+            if(totalMembers=== 0){
+              return;
+            }  
         } else {
-          console.log('No matching employee found for the provided ID.');
-          alert('No matching employee found for the provided ID.');
+            console.log("No data available for the given date and line");
+            return; // Return 0 if no data is found
         }
-      })
-      .catch((error) => {
-        console.error('Error fetching employee data:', error);
+    } catch (error) {
+        console.error("Error retrieving data: ", error);
+        return;
+    }
+
+    
+    const totalRunTimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime/${totalMembers}`);
+
+    setSelectedIncompleteBundle("");
+  
+    try {
+      // Fetch the current operation data from Firebase
+      const snapshot = await get(dailyUpdatesRef);
+      const runSnapshot = await get(totalRunTimeRef);
+      if (!snapshot.exists()) {
+        console.error("Operation data does not exist.");
+        return;
+      }   
+      
+      const operationData = snapshot.val();
+      const {
+        startTime,
+        endTime,
+        //runTime , // Total runtime accumulated across pauses
+      } = operationData;
+
+      const runData = runSnapshot.val();
+      const {
+        runTime , // Total runtime accumulated across pauses
+      } = runData;
+  
+      // Ensure startTime exists for calculations
+      if (!startTime) {
+        console.error("Start time is missing.");
+        return;
+      }
+      console.log("Run Time of ealier : " + runTime);
+      // Convert Firebase timestamps to milliseconds
+      const endMillis = new Date(endTime).getTime();
+      let timeDifferenceMillis;
+  
+      const startMillis = new Date(startTime).getTime();  // Convert startTime to milliseconds
+      timeDifferenceMillis = endMillis-startMillis ;   // Time from start to pause
+      
+  
+      // Handle cases where time difference is negative (should not happen)
+      if (timeDifferenceMillis < 0) {
+        console.error("Invalid data: endTime is earlier than startTime.");
+        return;
+      }
+     // getCurrentRunTime(selectedLine);
+      // Convert runtime to seconds
+      const newRunTimeSeconds = Math.floor(timeDifferenceMillis / 1000);
+  
+      // Add the new runtime to the accumulated runtime
+      const updatedRuntime = runTime + newRunTimeSeconds;
+
+      await update(totalRunTimeRef, {
+        runTime: updatedRuntime,          // Update runtime in real-time
       });
-      // .finally(() => {
-      //   console.log('Execution of checkAndUpdateGuestMembers function has completed.');
-      // });
+  
+  
+      setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+      console.log("Runtime updated and selectedIncompleteBundle set.");
+      console.log("Run Time: " + updatedRuntime);
+      
+    } catch (error) {
+      console.error("Error calculating and updating runtime:", error);
+    }
+  };
+  
+  const calculatePauseTime = async (selectedLine) => {   
+    const previousSelectedIncompleteBundle = selectedIncompleteBundle;
+
+    const currentDate = new Date().toISOString().split('T')[0];
+    // Define the reference for dailyUpdates using the current date and selected line
+    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+  
+    setSelectedIncompleteBundle("");
+  
+    try {
+      const snapshot = await get(dailyUpdatesRef);
+      if (!snapshot.exists()) {
+        console.error("Operation data does not exist.");
+        return;
+      }
+      const operationData = snapshot.val();
+      const {
+        startTime,
+        endTime,
+        pauseTime , // Total runtime accumulated across pauses
+      } = operationData;
+  
+      // Ensure startTime exists for calculations
+      if (!startTime) {
+        console.error("Start time is missing.");
+        return;
+      }
+      console.log("pause Time of ealier : " + pauseTime);
+      // Convert Firebase timestamps to milliseconds
+      const endMillis = new Date(endTime).getTime();
+      let timeDifferenceMillis;
+  
+      const startMillis = new Date(startTime).getTime();  // Convert startTime to milliseconds
+      timeDifferenceMillis = startMillis -endMillis;   // Time from start to pause
+      
+  
+      // Handle cases where time difference is negative (should not happen)
+      if (timeDifferenceMillis < 0) {
+        console.error("Invalid data: endTime is earlier than startTime.");
+        return;
+      }
+  
+      // Convert runtime to seconds
+      const newPauseTimeSeconds = Math.floor(timeDifferenceMillis / 1000);
+  
+      // Add the new runtime to the accumulated runtime
+      const updatedPausetime = pauseTime + newPauseTimeSeconds;
+  
+      // Update the runtime and accumulatedRunTime in Firebase
+      await update(dailyUpdatesRef, {
+        pauseTime: updatedPausetime,          // Update runtime in real-time
+        //accumulatedRunTime: updatedRuntime // Keep track of the total accumulated runtime
+      });
+      setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+      console.log("Runtime updated and selectedIncompleteBundle set.");
+      console.log("Pause: " + updatedPausetime);
+  
+    } catch (error) {
+      console.error("Error calculating and updating runtime:", error);
+    }
   };
   
   
-  
-  const updateWorkingMembers = (lineNumber, changeInHostMembers) => {
-    const tempRef = ref(database, 'serverTime/temp');
-  
-    set(tempRef, { timestamp: serverTimestamp() })
-      .then(() => {
-        console.log('Server timestamp set successfully.');
-        return get(tempRef);
-      })
-      .then((timestampSnapshot) => {
-        if (timestampSnapshot.exists()) {
-          const serverTimestampValue = timestampSnapshot.val().timestamp;
-          const serverDate = new Date(serverTimestampValue);
-  
-          const currentDate = serverDate.toISOString().split('T')[0];
-          const workingMembersRef = ref(database, `dailyUpdates/${currentDate}/${lineNumber}`);
-  
-          return get(workingMembersRef)
-            .then((snapshot) => {
-              let currentHostMembers = 0;
-  
-              if (snapshot.exists()) {
-                const data = snapshot.val();
-                currentHostMembers = data.hostMembers || 0;
-              }
-  
-              if (isNaN(currentHostMembers) || isNaN(changeInHostMembers)) {
-                throw new Error('Invalid number provided for updating host members.');
-              }
-  
-              const updatedHostMembers = currentHostMembers + changeInHostMembers;
-  
-              if (isNaN(updatedHostMembers)) {
-                throw new Error('The updated host members count resulted in NaN.');
-              }
-  
-              return update(workingMembersRef, {
-                hostMembers: updatedHostMembers,
-              });
-            })
-            .then(() => {
-              console.log(`Host members count updated successfully for line: ${lineNumber} on date: ${currentDate}`);
-              alert("Member added to line as a host");
-              setId(''); // Clear input after update
-            })
-            .catch((error) => {
-              console.error('Error updating host members:', error);
-            });
+  const getCurrentRunTime = async (selectedLine) => {
+
+    const previousSelectedIncompleteBundle = selectedIncompleteBundle;
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    // Define the reference for dailyUpdates using the current date and selected line
+    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+    let totalMembers;
+      try {
+        const snapshot = await get(dailyUpdatesRef);
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const guestMembers = data.guestMembers || 0;  // Get guestMembers or default to 0
+            const hostMembers = data.hostMembers || 0;    // Get hostMembers or default to 0
+            
+            totalMembers = guestMembers + hostMembers;
+            if(totalMembers=== 0){
+              return;
+            }  
         } else {
-          console.error('Error fetching server timestamp.');
-          alert('Error fetching server timestamp.');
-          throw new Error('Server timestamp not found.');
+            console.log("No data available for the given date and line");
+            return; // Return 0 if no data is found
         }
-      })
-      .catch((error) => {
-        console.error('Error setting or fetching server timestamp:', error);
-      })
-      .finally(() => {
-        //console.log('Attempting to remove temporary server timestamp node.');
-        remove(tempRef).then(() => {
-         // console.log('Temporary server timestamp node removed successfully.');
-        }).catch((error) => {
-          console.error('Error removing temporary server timestamp node:', error);
+    } catch (error) {
+        console.error("Error retrieving data: ", error);
+        return;
+    }
+
+    
+    const totalRunTimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime/${totalMembers}`);
+
+    setSelectedIncompleteBundle("");
+
+    try {
+      // Update the pauseTime in dailyUpdates
+      await update(dailyUpdatesRef, {
+        endTime:serverTimestamp(),
+      });
+      console.log("Run time successfully added to dailyUpdates.");
+    } catch (error) {
+      console.error("Error updating dailyUpdates:", error);
+    }
+
+    try {
+      // Fetch data from the current operation node
+      const snapshot = await get(dailyUpdatesRef);
+      const runSnapshot = await get(totalRunTimeRef);
+
+      if (!snapshot.exists()) {
+        console.error("Operation data does not exist.");
+        return;
+      }
+
+      // Retrieve startTime, pauseTime, and runtime from the current operation data
+      //const operationData = snapshot.val();
+      const operationData1 = snapshot.val();
+      console.log("Operation data from Firebase:", operationData1);
+    
+      const {
+        startTime,
+        endTime,
+        //runTime = 0,
+      } = operationData1;
+
+      const runData = runSnapshot.val();
+      const {
+        runTime = 0 , // Total runtime accumulated across pauses
+      } = runData;
+    
+        // Check if endTime exists
+    if (!endTime) {
+      console.error("endTime is undefined or missing.");
+      return;
+    }
+      console.log("used run"+runTime);
+      // Get the current time as the "temporary" end time
+      const currentMillis = new Date().getTime();
+      const startMillis = new Date(startTime).getTime();
+      // Check if startMillis is valid
+    if (isNaN(startMillis)) {
+      console.error("Invalid startMillis, unable to calculate time difference.");
+      return;
+    }
+      let timeDifferenceMillis;
+      timeDifferenceMillis =  currentMillis -startMillis;
+     
+      
+
+      if (timeDifferenceMillis < 0) {
+        console.error("Invalid data: current time is earlier than startTime/pauseTime.");
+        return;
+      }
+
+      // Convert the time difference to seconds
+      const newRunTimeSeconds = Math.floor(timeDifferenceMillis / 1000);
+      console.log("run test: "+newRunTimeSeconds)
+      // Calculate the total runtime by adding the current runtime to the accumulated runtime
+      const updatedRuntime = runTime + newRunTimeSeconds;
+
+      try {
+        // Update the pauseTime in dailyUpdates
+        await update(dailyUpdatesRef, {
+          //runTime: updatedRuntime ,// Add or update the pauseTime under dailyUpdates
+          startTime:endTime,
         });
-      });
-  };
-  
- 
+        await update(totalRunTimeRef, {
+          runTime: updatedRuntime ,// Add or update the pauseTime under dailyUpdates
+          //startTime:endTime,
+        });
+
+        console.log("Run time successfully added to dailyUpdates.");
+
+      } catch (error) {
+        console.error("Error updating dailyUpdates:", error);
+      }
+      setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+      console.log("Current Total Runtime: " + updatedRuntime + " seconds");
+      return updatedRuntime;
+
+    } catch (error) {
+      console.error("Error fetching and calculating runtime:", error);
+    }
+};
 
   //Assign employee part
-  
-  
-  
+
 
   useEffect(() => {
     console.log('Selected Line:', selectedLine); // Debug: Log the selected line
@@ -434,131 +857,50 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
     setId(e.target.value);
   };
 
-  
-  const handleAddToLine = () => {
-    console.log('Order Number:', orderNumber);
-console.log('Italy PO:', italyPo);
-console.log('Bundle ID:', bundleId);
+   
+const firstTotalRunTime = async(selectedLine)=>{
+  const currentDate = new Date().toISOString().split('T')[0];
 
-// Change the reference to point to the "currentOperations" node instead of the selected line
-const operationsRef = ref(database, 'currentOperations');
+  // Define the reference for dailyUpdates using the current date and selected line
+  const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+  let totalMembers;
+    try {
+      const snapshot = await get(dailyUpdatesRef);
+      if (snapshot.exists()) {
+          const data = snapshot.val();
+          const guestMembers = data.guestMembers || 0;  // Get guestMembers or default to 0
+          const hostMembers = data.hostMembers || 0;    // Get hostMembers or default to 0
+          
+          totalMembers = guestMembers + hostMembers;
+          if(totalMembers=== 0){
+            return;
+          }  
+      } else {
+          console.log("No data available for the given date and line");
+          return; // Return 0 if no data is found
+      }
+  } catch (error) {
+      console.error("Error retrieving data: ", error);
+      return;
+  }
   
-    // Query to find the specific order that matches orderNumber, italyPo, and bundleId
-    // Query to find the specific order that matches orderNumber, italyPo, and bundleId within "currentOperations"
-    const orderQuery = query(
-      operationsRef,
-      orderByChild('orderId'),
-      equalTo(orderNumber)
-    );
-  
-    get(orderQuery)
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          let foundOrder = null;
-  
-          snapshot.forEach((childSnapshot) => {
-            const orderData = childSnapshot.val();
-            if (orderData.italyPo === italyPo && orderData.bundleId === bundleId) {
-              foundOrder = childSnapshot;
-            }
-          });
-  
-          if (foundOrder) {
-            const currentHostMembers = foundOrder.val().hostMembers || 0;
-            const updatedHostMembers = currentHostMembers + 1;
-  
-            update(foundOrder.ref, { hostMembers: updatedHostMembers })
-              .then(() => {
-                console.log('Host members count updated successfully!');
-               
-                
-              })
-              .catch((error) => {
-                console.error('Error updating host members count:', error);
-              });
-          } else {
-            console.log('No matching order found for the specified details.');
-          }
-        } else {
-          console.log('Selected line does not exist in the database.');
-        }
-      })
-      .catch((error) => {
-        console.error('Error fetching line data:', error);
-      });
-  };
+  const totalRunTimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime/${totalMembers}`);
+  const runTimeSnapshot = await get(totalRunTimeRef);
 
-  
-  
-  // const updateCurrentOperations = () => {
+  if (runTimeSnapshot.exists()) {
+    console.log("already it set the time");
+    return;
+  }else{
+    await update(totalRunTimeRef, {
+      runTime: 0, // Update with calculated pause time
+    })
+    console.log("run Time set to 0");
+  }
+ 
+}
 
-    
-  //   const employeesRef = ref(database, 'employees');
-  // console.log(id);
-  //   // Query to check if the employee exists
-  //   const employeeQuery = query(
-  //     employeesRef,
-  //     orderByChild('employeeNumber'),
-  //     equalTo(id)
-  //   );
 
-  // get(employeeQuery)
-  //   .then((employeeSnapshot) => {
-  //     if (employeeSnapshot.exists()) {
-  //       // Employee exists, proceed with updating the current operations
-  //       const operationsRef = ref(database, 'currentOperations');
-        
-  //       // Query to find the specific order that matches orderNumber, italyPo, and bundleId
-  //       const orderQuery = query(
-  //         operationsRef,
-  //         orderByChild('orderId'),
-  //         equalTo(orderNumber)
-  //       );
-    
-  //       get(orderQuery)
-  //         .then((orderSnapshot) => {
-  //           if (orderSnapshot.exists()) {
-  //             let foundOrder = null;
-    
-  //             orderSnapshot.forEach((childSnapshot) => {
-  //               const orderData = childSnapshot.val();
-  //               if (orderData.italyPo === italyPo && orderData.bundleId === bundleId) {
-  //                 foundOrder = childSnapshot;
-  //               }
-  //             });
-    
-  //             if (foundOrder) {
-  //               const currentGuestMembers = foundOrder.val().guestMembers || 0;
-  //               const updatedGuestMembers = currentGuestMembers + 1;
-    
-  //               update(foundOrder.ref, { guestMembers: updatedGuestMembers })
-  //                 .then(() => {
-  //                   console.log('Guest members count updated successfully!');
-  //                   // Additional actions can be placed here if needed
-  //                 })
-  //                 .catch((error) => {
-  //                   console.error('Error updating guest members count:', error);
-  //                 });
-  //             } else {
-  //               console.log('No matching order found for the specified details.');
-  //             }
-  //           } else {
-  //             console.log('Selected order does not exist in the database.');
-  //           }
-  //         })
-  //         .catch((error) => {
-  //           console.error('Error fetching order data:', error);
-  //         });
-  //     } else {
-  //       console.log('No employee found with the given ID.');
-  //     }
-  //   })
-  //   .catch((error) => {
-  //     console.error('Error fetching employee data:', error);
-  //   });
-  // };
-  
-  const updateCurrentOperations = (orderNumber, italyPo, bundleId, id, selectedLine) => {
+  const updateCurrentOperations = (id, selectedLine) => {
     const employeesRef = ref(database, 'employees');
   
     // Query to check if the employee exists
@@ -572,7 +914,6 @@ const operationsRef = ref(database, 'currentOperations');
       .then((employeeSnapshot) => {
         if (employeeSnapshot.exists()) {
           // Employee exists, now check line allocation
-          const employeeData = employeeSnapshot.val();
           let lineAllocation = null;
   
           // Since snapshot may have multiple children, iterate over them to get the employee data
@@ -580,69 +921,163 @@ const operationsRef = ref(database, 'currentOperations');
             lineAllocation = childSnapshot.val().lineAllocation;
           });
   
-          const operationsRef = ref(database, 'currentOperations');
-          // const orderQuery = query(
-          //   operationsRef,
-          //   orderByChild('orderId'),
-          //   equalTo(orderNumber)
-          // );
-          const orderQuery = query(
-            ref(database, `currentOperations/${orderData.orderNumber}/${selectedBundle}`)
-          );
+          const currentDate = new Date().toISOString().split('T')[0];
+          // Define the reference for dailyUpdates using the current date and selected line
+          const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
   
-          get(orderQuery)
-            .then((orderSnapshot) => {
-              if (orderSnapshot.exists()) {
-                let foundOrder = null;
+          get(dailyUpdatesRef)
+            .then((dailySnapshot) => {
+              if (dailySnapshot.exists()) {
+                // Daily data exists
+                const dailyData = dailySnapshot.val();
+                const currentHostMembers = dailyData.hostMembers || 0;
+                const currentGuestMembers = dailyData.guestMembers || 0;
+                const status = dailyData.isPaused;
   
-                orderSnapshot.forEach((childSnapshot) => {
-                  const orderData = childSnapshot.val();
-                  if (orderData.italyPo === italyPo && orderData.bundleId === bundleId) {
-                    foundOrder = childSnapshot;
-                  }
-                });
-  
-                if (foundOrder) {
+                if (status) {
                   if (lineAllocation === selectedLine) {
                     // Update hostMembers
-                    const currentHostMembers = foundOrder.val().hostMembers || 0;
                     const updatedHostMembers = currentHostMembers + 1;
   
-                    update(foundOrder.ref, { hostMembers: updatedHostMembers })
+                    update(dailyUpdatesRef, { hostMembers: updatedHostMembers })
                       .then(() => {
                         console.log('Host members count updated successfully!');
-                        updateWorkingMembers(selectedLine,1);
+                        setId("");
+                        firstTotalRunTime(selectedLine);
                       })
                       .catch((error) => {
                         console.error('Error updating host members count:', error);
                       });
                   } else {
                     // Update guestMembers
-                    const currentGuestMembers = foundOrder.val().guestMembers || 0;
                     const updatedGuestMembers = currentGuestMembers + 1;
   
-                    update(foundOrder.ref, { guestMembers: updatedGuestMembers })
+                    update(dailyUpdatesRef, { guestMembers: updatedGuestMembers })
                       .then(() => {
                         console.log('Guest members count updated successfully!');
-                        checkAndUpdateGuestMembers(selectedLine,1,id);
+                        setId("");
+                        firstTotalRunTime(selectedLine);
                       })
                       .catch((error) => {
                         console.error('Error updating guest members count:', error);
                       });
                   }
                 } else {
-                  console.log('No matching order found for the specified details.');
+                  getCurrentRunTime(selectedLine);
+                  if (lineAllocation === selectedLine) {
+                    // Update hostMembers
+                    const updatedHostMembers = currentHostMembers + 1;
+  
+                    update(dailyUpdatesRef, { hostMembers: updatedHostMembers })
+                      .then(() => {
+                        console.log('Host members count updated successfully!');
+                        setId("");
+                        firstTotalRunTime(selectedLine);
+                      })
+                      .catch((error) => {
+                        console.error('Error updating host members count:', error);
+                      });
+                  } else {
+                    // Update guestMembers
+                    const updatedGuestMembers = currentGuestMembers + 1;
+  
+                    update(dailyUpdatesRef, { guestMembers: updatedGuestMembers })
+                      .then(() => {
+                        console.log('Guest members count updated successfully!');
+                        setId("");
+                        firstTotalRunTime(selectedLine);
+                      })
+                      .catch((error) => {
+                        console.error('Error updating guest members count:', error);
+                      });
+                  }
                 }
               } else {
-                console.log('Selected order does not exist in the database.');
+                // Daily data does not exist, initialize it with 0 for hostMembers and guestMembers
+                const initialData = {
+                  hostMembers: 0,
+                  guestMembers: 0,
+                  isPaused: true,
+                };
+  
+                set(dailyUpdatesRef, initialData)
+                  .then(() => {
+                    console.log('Daily data initialized successfully!');
+  
+                    // Set totalMembers to 1
+                    const totalMembers = 1;
+  
+                    // After initializing, update based on the lineAllocation
+                    if (lineAllocation === selectedLine) {
+                      // Update hostMembers
+                      update(dailyUpdatesRef, { 
+                        hostMembers: 1,
+                        startTime:"",
+                        endTime:"",
+                        pauseTime: "",
+                        Smv: "",
+                      })
+                        .then(() => {
+                          console.log('Host members count set to 1.');
+                          setId("");
+  
+                          // Update runTime to 0 for the totalMembers
+                          const totalRunTimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime/${totalMembers}`);
+                          set(totalRunTimeRef, {
+                            runTime: 0,
+                          }
+                          )
+                            .then(() => {
+                              console.log('RunTime initialized to 0 for totalMembers 1.');
+                            })
+                            .catch((error) => {
+                              console.error('Error initializing runTime for totalMembers 1:', error);
+                            });
+                        })
+                        .catch((error) => {
+                          console.error('Error setting host members count:', error);
+                        });
+                    } else {
+                      // Update guestMembers
+                      update(dailyUpdatesRef, { 
+                        guestMembers: 1,
+                        startTime:"",
+                        endTime:"",
+                        pauseTime: "",
+                        Smv: "",
+                       })
+                        .then(() => {
+                          console.log('Guest members count set to 1.');
+                          setId("");
+  
+                          // Update runTime to 0 for the totalMembers
+                          const totalRunTimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime/${totalMembers}`);
+                          set(totalRunTimeRef, {
+                            runTime: 0,
+                          })
+                            .then(() => {
+                              console.log('RunTime initialized to 0 for totalMembers 1.');
+                            })
+                            .catch((error) => {
+                              console.error('Error initializing runTime for totalMembers 1:', error);
+                            });
+                        })
+                        .catch((error) => {
+                          console.error('Error setting guest members count:', error);
+                        });
+                    }
+                  })
+                  .catch((error) => {
+                    console.error('Error initializing daily data:', error);
+                  });
               }
             })
             .catch((error) => {
-              console.error('Error fetching order data:', error);
+              console.error('Error fetching daily data:', error);
             });
         } else {
           console.log('No employee found with the given ID.');
-          alert("No employee found with the given ID.");
+          alert('No employee found with the given ID.');
         }
       })
       .catch((error) => {
@@ -650,13 +1085,15 @@ const operationsRef = ref(database, 'currentOperations');
       });
   };
   
+  
+  
   const updateGuest = () => {
-    updateWorkingMembers(selectedLine,1);
-    //updateCurrentOperations(orderData.orderNumber, italyPo, bundleId, id, selectedLine);
+   // updateWorkingMembers(selectedLine,1);
+    updateCurrentOperations(id, selectedLine);
     retrievemembersData(selectedLine);
   };
   const updateHost = () => {
-    handleAddToLine();
+ //  handleAddToLine();
     
     retrievemembersData(selectedLine);  
   };
@@ -694,12 +1131,86 @@ const operationsRef = ref(database, 'currentOperations');
     return unsubscribe;
   };
 
+  const removeHostMember = (lineNumber) => {
+    if (!lineNumber) {
+      console.error("Line number cannot be undefined");
+      return;
+    }
+  
+    // Get the current date in 'YYYY-MM-DD' format
+    const currentDate = new Date().toISOString().split('T')[0];
+  
+    // Reference to the daily updates node for the selected line
+    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${lineNumber}`);
+  
+    get(dailyUpdatesRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const currentHostMembers = data.hostMembers || 0;
+  
+        // Ensure hostMembers count doesn't go below 0
+        if (currentHostMembers > 0) {
+          getCurrentRunTime(lineNumber);
+          update(dailyUpdatesRef, { hostMembers: currentHostMembers - 1 })
+            .then(() => {
+              console.log(`Host member removed successfully from ${lineNumber}`);
+            })
+            .catch((error) => {
+              console.error('Error removing host member:', error);
+            });
+        } else {
+          console.log('No host members to remove.');
+        }
+      } else {
+        console.log(`No data found for ${lineNumber} on ${currentDate}`);
+      }
+    }).catch((error) => {
+      console.error('Error fetching daily updates:', error);
+    });
+  };
+  
+  const removeGuestMember = (lineNumber) => {
+    if (!lineNumber) {
+      console.error("Line number cannot be undefined");
+      return;
+    }
+  
+    // Get the current date in 'YYYY-MM-DD' format
+    const currentDate = new Date().toISOString().split('T')[0];
+  
+    // Reference to the daily updates node for the selected line
+    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${lineNumber}`);
+  
+    get(dailyUpdatesRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const currentGuestMembers = data.guestMembers || 0;
+  
+        // Ensure guestMembers count doesn't go below 0
+        if (currentGuestMembers > 0) {
+          getCurrentRunTime(lineNumber);
+          update(dailyUpdatesRef, { guestMembers: currentGuestMembers - 1 })
+            .then(() => {
+              console.log(`Guest member removed successfully from ${lineNumber}`);
+            })
+            .catch((error) => {
+              console.error('Error removing guest member:', error);
+            });
+        } else {
+          console.log('No guest members to remove.');
+        }
+      } else {
+        console.log(`No data found for ${lineNumber} on ${currentDate}`);
+      }
+    }).catch((error) => {
+      console.error('Error fetching daily updates:', error);
+    });
+  };
+  
 
    // Function to update 1stQuality
    const handleUpdateFirstQuality = (increment) => {
-    
-    // Reference to the specific path: currentOperations/{orderId}/{bundleId}
-    //const orderUpdateRef = ref(database, `currentOperations/${orderData.orderNumber}/${selectedBundle}`);
+
      // Determine the path based on user selection
      const previousSelectedIncompleteBundle = selectedIncompleteBundle;
     let orderUpdateRef;
@@ -792,15 +1303,19 @@ const operationsRef = ref(database, 'currentOperations');
   
   
   
-  const handleUpdateQuality = () => {
-   handleUpdateFirstQuality(1);
-    handleUpdateTotalFirstQuality(1, selectedLine); // Pass the selected line dynamically  
+  const handleUpdateQuality = async() => {
+   await handleUpdateFirstQuality(1);
+   await handleUpdateTotalFirstQuality(1, selectedLine); // Pass the selected line dynamically  
+   await getCurrentRunTime(selectedLine);
+   await calculateTotalWorkTime(selectedLine);
     
   };
 
-  const handleUpdateQualityBy3 = () => {
-    handleUpdateFirstQuality(3);
-    handleUpdateTotalFirstQuality(3, selectedLine); // Pass the selected line dynamically
+  const handleUpdateQualityBy3 = async() => {
+    await handleUpdateFirstQuality(3);
+    await handleUpdateTotalFirstQuality(3, selectedLine); // Pass the selected line dynamically
+    await getCurrentRunTime(selectedLine);
+    await calculateTotalWorkTime(selectedLine);
   };
 
 
@@ -846,63 +1361,68 @@ async function retrieveFirstQuality(selectedLine) {
 
 const [totalFirstQuality, setTotalFirstQuality] = useState(null);
 
-const retrieveTotalFirstQuality = (lineNumber) => {
+
+const retrieveTotalFirstQuality = async (lineNumber) => {
   if (!lineNumber) {
     console.error("Line number cannot be undefined");
     return;
   }
 
-  // Create a reference to a temporary node to get the server timestamp
-  const tempRef = ref(database, 'serverTime/temp');
+  // Get the current date in 'YYYY-MM-DD' format
+  const currentDate = new Date().toISOString().split('T')[0];
 
-  // Set the server timestamp temporarily to fetch it
-  set(tempRef, { timestamp: serverTimestamp() })
-    .then(() => {
-      // Fetch the server timestamp
-      return get(tempRef);
-    })
-    .then((snapshot) => {
-      if (snapshot.exists()) {
-        const serverTimestampValue = snapshot.val().timestamp;
-        const serverDate = new Date(serverTimestampValue);
+  const effiencyRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Effiency`);
+  let qualitySum = 0;
+  let effiencySnapshot;
+  try{
+    effiencySnapshot = await get(effiencyRef );
 
-        // Format the server date to 'YYYY-MM-DD'
-        const currentDate = serverDate.toISOString().split('T')[0];
+    if(effiencySnapshot.exists()){
+              // Loop through the entries and sum the totalWorkTimeinMinitues
+              effiencySnapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                if (data.Quality) {
+                  qualitySum  += data.Quality;
+                }
+              });
+              console.log("quqlity "+qualitySum)     
+    }
+  }catch(error){
+    console.error("Error retrieving runtime data:", error);
+  }
+  // Construct the path for the daily updates under the current date and specific line
+  const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${lineNumber}`);
 
-        // Construct the path for the daily updates under the server date and specific line
-        const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${lineNumber}`);
-
-        // Set up a real-time listener for the total1stQuality value
-        const unsubscribe = onValue(dailyUpdatesRef, (snapshot) => {
-          if (snapshot.exists()) {
-            const totalFirstQuality = snapshot.val().total1stQuality || 0;
-            console.log(`Real-time Total 1st Quality for ${lineNumber} on ${currentDate}: ${totalFirstQuality}`);
-            setTotalFirstQuality(totalFirstQuality);
-          } else {
-            console.log(`No data found for ${lineNumber} on ${currentDate}`);
-            setTotalFirstQuality(0); // Set to 0 if no data found
-          }
-        }, (error) => {
-          console.error("Error fetching real-time data:", error);
-        });
-
-        // Return the unsubscribe function to clean up the listener
-        return unsubscribe;
-      } else {
-        console.error('Error fetching server timestamp.');
-        setTotalFirstQuality(0);
+  // Set up a real-time listener for the total1stQuality value
+  const unsubscribe = onValue(dailyUpdatesRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const totalFirstQuality = snapshot.val().total1stQuality || 0;
+     // console.log(`Real-time Total 1st Quality for ${lineNumber} on ${currentDate}: ${totalFirstQuality}`);
+     const finalTotal = qualitySum + totalFirstQuality;
+      setTotalFirstQuality(finalTotal);
+    } else {
+      //console.log(`No data found for ${lineNumber} on ${currentDate}`);
+      if(qualitySum!==0){
+        setTotalFirstQuality(qualitySum);
+      }else{
+        setTotalFirstQuality(0); // Set to 0 if no data found
       }
-    })
-    .catch((error) => {
-      console.error('Error setting or fetching server timestamp:', error);
-    });
+    }
+    
+  }, (error) => {
+    console.error("Error fetching real-time data:", error);
+  });
+
+  // Return the unsubscribe function to clean up the listener
+  return unsubscribe;
 };
+
 
 // Function to update 2ndQuality
 const handleUpdateSecondQuality = () => {
 
   const previousSelectedIncompleteBundle = selectedIncompleteBundle;
-     
+  
   let orderUpdateRef;
     if (selectedIncompleteBundle) {
       orderUpdateRef = ref(database, `currentOperations/${selectedLine}/${selectedIncompleteBundle}`);
@@ -924,8 +1444,9 @@ const handleUpdateSecondQuality = () => {
         update(orderUpdateRef, { '2ndQuality': newSecondQuality })
           .then(() => {
             console.log(`2ndQuality updated to ${newSecondQuality}`);
-            setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
-            alert(`2ndQuality updated to ${newSecondQuality}`);
+            getCurrentRunTime(selectedLine);
+            //setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+            //alert(`2ndQuality updated to ${newSecondQuality}`);
             countQualities();
           })
           .catch((error) => {
@@ -968,9 +1489,11 @@ const handleUpdateRejection = () => {
         update(orderUpdateRef, { 'Rejection': newRejection})
           .then(() => {
             console.log(`Rejection updated to ${newRejection}`);
-            setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
-            alert(`Rejection updated to ${newRejection}`);
+            getCurrentRunTime(selectedLine);
+            //setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
             countQualities();
+          }).then(()=>{
+            alert(`Rejection updated to ${newRejection}`);
           })
           .catch((error) => {
             console.error('Error updating Rejection:', error);
@@ -986,30 +1509,40 @@ const handleUpdateRejection = () => {
     });
 };
 
-// const [startTime, setStartTime] = useState(() => {
-//   const savedStartTime = localStorage.getItem('startTime');
-//   return savedStartTime ? parseInt(savedStartTime, 10) : null;
-// });
 
-// const [runTime, setRunTime] = useState(() => {
-//   const savedRunTime = localStorage.getItem('runTime');
-//   return savedRunTime ? JSON.parse(savedRunTime) : { hours: 0, minutes: 0 };
-// });
+const hasExecutedRunTimeUpdate= useRef(false);
+const hasExecutedPauseTimeUpdate = useRef(false);
+
 
 useEffect(() => {
-  const timeRef = ref(database, 'serverTime'); // A dummy reference to get server time
+  if (!selectedLine) {
+    console.error("Selected line is undefined or null");
+    return;
+  }
+  
+  //console.log("Selected line at start of useEffect: ", selectedLine);
 
+  const timeRef = ref(database, 'serverTime'); // Dummy reference to get server time
+  const previousSelectedIncompleteBundle = selectedIncompleteBundle;
+  const currentDate = new Date().toISOString().split('T')[0];
+  
+  // Define the reference for dailyUpdates using the current date and selected line
+  const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+  
   // Save server timestamp temporarily to calculate server time
   set(timeRef, {
     timestamp: serverTimestamp(),
   }).then(() => {
+   // console.log("Set server timestamp successfully");
+
     onValue(timeRef, (snapshot) => {
       const serverTime = snapshot.val()?.timestamp;
       if (serverTime) {
+        //console.log("Server time received:", serverTime);
         const now = new Date(serverTime);
 
         const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 30, 0);
-        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 30, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 30, 0);
 
         if (now >= start && now <= end) {
           // If there's no startTime, set it to the start time
@@ -1019,25 +1552,84 @@ useEffect(() => {
           }
 
           // Start the timer
-          const intervalId = setInterval(() => {
+          const intervalId = setInterval(async () => {
             const currentTime = new Date();
             
             // Check if current time is within break periods
             const isBreakTime = (
-              (currentTime.getHours() === 12 && currentTime.getMinutes() >= 27 && currentTime.getMinutes() < 28) ||
-              (currentTime.getHours() === 15 && currentTime.getMinutes() >= 0 && currentTime.getMinutes() < 6)
+              (currentTime.getHours() === 18 && currentTime.getMinutes() >= 21 && currentTime.getMinutes() < 22) ||
+              (currentTime.getHours() === 18 && currentTime.getMinutes() >= 23 && currentTime.getMinutes() < 24)
             );
 
+            // const isLunchTime1 =(
+            //   (currentTime.getHours() === 18 && currentTime.getMinutes() >= 18 && currentTime.getHours() === 18 && currentTime.getMinutes() < 19)
+            // );
+            // const isLunchTime2 =(
+            //   (currentTime.getHours() === 18 && currentTime.getMinutes() >= 20 && currentTime.getMinutes() < 21)
+            // );
+
+            // // Ensure `selectedLine` is correct here
+            // //console.log("Selected line inside interval:", selectedLine);
+            // if(selectedLine==='Line 1' || selectedLine ==="Line 2" || selectedLine ==="Line 3"){
+            //   if (isLunchTime1 && !isBreakTimeModalOpen) {
+            //     setIsBreakTimeModalOpen(true); // Open break time modal
+            //     hasExecutedPauseTimeUpdate.current = false; // Reset for the next break
+                
+            //     if (!hasExecutedRunTimeUpdate.current) {
+            //         getCurrentRunTime(selectedLine); // Call the function to update run time
+            //         hasExecutedRunTimeUpdate.current = true; // Mark as executed                  
+            //     }
+            //   } else if (!isLunchTime1 && isBreakTimeModalOpen) {
+            //     setIsBreakTimeModalOpen(false); // Close break time modal
+            //     hasExecutedRunTimeUpdate.current = false; // Reset for the next break
+                
+            //     if (!hasExecutedPauseTimeUpdate.current) {
+            //         updatePauseTime(selectedLine); // Call the function to update pause time
+            //         hasExecutedPauseTimeUpdate.current = true; // Mark as executed
+            //     }
+            //   }
+            // }
+            // if(selectedLine==='Line 4' || selectedLine ==="Line 5" || selectedLine ==="Line 6"){
+            //   if (isLunchTime2 && !isBreakTimeModalOpen) {
+            //     setIsBreakTimeModalOpen(true); // Open break time modal
+            //     hasExecutedPauseTimeUpdate.current = false; // Reset for the next break
+                
+            //     if (!hasExecutedRunTimeUpdate.current) {
+            //         getCurrentRunTime(selectedLine); // Call the function to update run time
+            //         hasExecutedRunTimeUpdate.current = true; // Mark as executed                  
+            //     }
+            //   } else if (!isLunchTime2 && isBreakTimeModalOpen) {
+            //     setIsBreakTimeModalOpen(false); // Close break time modal
+            //     hasExecutedRunTimeUpdate.current = false; // Reset for the next break
+                
+            //     if (!hasExecutedPauseTimeUpdate.current) {
+            //         updatePauseTime(selectedLine); // Call the function to update pause time
+            //         hasExecutedPauseTimeUpdate.current = true; // Mark as executed
+            //     }
+            //   }
+            // }
+
             if (isBreakTime && !isBreakTimeModalOpen) {
-              setIsBreakTimeModalOpen(true); // Open break time modal during break time
+              setIsBreakTimeModalOpen(true); // Open break time modal
+              hasExecutedPauseTimeUpdate.current = false; // Reset for the next break
+              
+              if (!hasExecutedRunTimeUpdate.current) {
+                  getCurrentRunTime(selectedLine); // Call the function to update run time
+                  hasExecutedRunTimeUpdate.current = true; // Mark as executed                  
+              }
             } else if (!isBreakTime && isBreakTimeModalOpen) {
-              setIsBreakTimeModalOpen(false); // Close break time modal when break time is over
+              setIsBreakTimeModalOpen(false); // Close break time modal
+              hasExecutedRunTimeUpdate.current = false; // Reset for the next break
+              
+              if (!hasExecutedPauseTimeUpdate.current) {
+                  updatePauseTime(selectedLine); // Call the function to update pause time
+                  hasExecutedPauseTimeUpdate.current = true; // Mark as executed
+              }
             }
 
             // Only update runtime if it's not break time
             if (!isBreakTime) {
               const elapsedTimeInSeconds = Math.floor((Date.now() - startTime) / 1000); // seconds
-
               const hours = Math.floor(elapsedTimeInSeconds / 3600);
               const minutes = Math.floor((elapsedTimeInSeconds % 3600) / 60);
 
@@ -1052,73 +1644,301 @@ useEffect(() => {
         }
       }
     });
+  }).catch((error) => {
+    console.error("Error setting server time:", error);
   });
-}, [isBreakTimeModalOpen]);
+}, [isBreakTimeModalOpen, selectedLine]); // Add all dependencies here
+
+
+
+const updateBreakStartTime = async (selectedLine) => {
+  const currentDate = new Date().toISOString().split('T')[0]; // Get the current date in YYYY-MM-DD format
+  const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+
+  try {
+    await update(dailyUpdatesRef, {
+      endTime: serverTimestamp(),   // Save the end time (if applicable)
+      isPaused: true,              // Set paused status
+      // Add other fields as necessary
+    });
+    console.log(`Daily updates for line ${selectedLine} have been updated successfully.`);
+    calculateRunTime(selectedLine);
+  } catch (error) {
+    console.error("Error updating daily updates:", error);
+  }
+};
+
+const updatePauseTime = async (selectedLine) => {
+  const currentDate = new Date().toISOString().split('T')[0]; // Get the current date in YYYY-MM-DD format
+  const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+
+  try {
+    // Retrieve current pause time from Firebase
+    const snapshot = await get(dailyUpdatesRef);
+    const currentData = snapshot.val();
+    const currentPauseTime = currentData?.pauseTime || 0; // Use 0 if pauseTime does not exist
+
+    // Add 15 minutes (15 * 60 * 1000 milliseconds)
+    const updatedPauseTime = currentPauseTime + (60);
+
+    // Update Firebase with the new pause time
+    await update(dailyUpdatesRef, {
+      pauseTime: updatedPauseTime,
+      isPaused: false, // Set paused status
+      startTime: serverTimestamp(),
+      endTime: serverTimestamp(),
+      // Add other fields as necessary
+    });
+
+    console.log(`Pause time for line ${selectedLine} has been updated to ${updatedPauseTime} milliseconds.`);
+  } catch (error) {
+    console.error("Error updating pause time:", error);
+  }
+};
+
+const [effiency, setEffiency] = useState("0");
+
+const calculateTotalWorkTime = async (selectedLine) => {
+
+  const currentDate = new Date().toISOString().split('T')[0];
+
+  const runtimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime`);
+  const effiencyRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Effiency`);
+  let effiencyData;
+  let effiencySnapshot;
+  try{
+    effiencySnapshot = await get(effiencyRef );
+    if(effiencySnapshot.exists()){
+      effiencyData = effiencySnapshot.val();
+    }
+  }catch(error){
+    console.error("Error retrieving runtime data:", error);
+  }
+
+  let totalWorkTimeinMinitues = 0;
+  let totalQuality = 0;
+  let effiency = 0;
+  let smv;
+  let averageEfficiency = 0;
+  try {
+      const snapshot = await get(runtimeRef);
+      if (snapshot.exists()) {
+          const runtimeData = snapshot.val();
+
+          let totalWorkTime = 0; 
+          // Iterate through all keys in the runtimeData, regardless of the totalMembers number
+          Object.keys(runtimeData).forEach((key) => {
+            const entry = runtimeData[key];  // Access each entry (e.g., { runTime: 213 })
+            
+            if (entry && entry.runTime !== undefined) {
+                const runtime = entry.runTime;
+                const totalMembers = parseInt(key, 10); // Convert key (which is a string) to an integer
+
+                // Calculate work time by multiplying totalMembers by runtime
+                totalWorkTime += totalMembers * runtime;
+            }
+            totalWorkTimeinMinitues = totalWorkTime/60;
+            if(effiencySnapshot.exists()){
+              let totalWorkTimeSum = 0;
+              let totalEfficiencySum = 0;
+              let count = 0; // To count the number of efficiency entries
+
+              // Loop through the entries and sum the totalWorkTimeinMinitues and efficiency values
+              effiencySnapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                
+                // Summing total work time
+                if (data.totalWorkTime) {
+                  totalWorkTimeSum += data.totalWorkTime;
+                }
+                
+                // Summing efficiency and counting entries
+                if (data.effiency) {
+                  totalEfficiencySum += data.effiency;
+                  count++;
+                }
+              });
+              totalWorkTimeinMinitues= totalWorkTimeinMinitues-totalWorkTimeSum;
+              // Calculate the average efficiency
+               averageEfficiency = count > 0 ? (totalEfficiencySum / count) : 0;
+            }
+          });
+       
+          console.log("Total Work Time (in seconds):", totalWorkTime);
+          console.log("minites "+ totalWorkTimeinMinitues)
+          //return totalWorkTime;
+      } else {
+          console.log("No runtime data available for the given date and line");
+          return 0;
+      }
+  } catch (error) {
+      console.error("Error retrieving runtime data:", error);
+      return 0;
+  }
+
+  const firstQualityRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/total1stQuality`);
+  const qualitySnapshot = await get(firstQualityRef);
+  if(qualitySnapshot.exists){
+    totalQuality= qualitySnapshot.val();
+    console.log("1 ;"+totalQuality)
+  }else{
+    console.log("No 1st Qualities for today yet.")
+  }
+  
+  const previousSelectedIncompleteBundle = selectedIncompleteBundle;
+  const smvRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Smv`);
+  
+  setSelectedIncompleteBundle(""); 
+  const smvSnapshot = await get(smvRef);
+      if (smvSnapshot.exists()) {
+         smv = smvSnapshot.val();
+         console.log("smv "+smv)
+      }
+  
+      effiency = (smv*totalQuality)/(totalWorkTimeinMinitues)*100;
+      if(averageEfficiency !==0){
+        effiency = (effiency + averageEfficiency)/2;
+      }
+      setEffiency(effiency);
+      return { totalWorkTimeinMinitues, effiency, totalQuality };
+}
+
+const saveEffiency= async (selectedLine, totalWorkTimeinMinitues, effiency, totalQuality) => {
+   const currentDate = new Date().toISOString().split('T')[0];
+
+  // const runtimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime`);
+  const effiencyRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Effiency`);
+  // let effiencyData;
+  // let effiencySnapshot;
+  // try{
+  //   effiencySnapshot = await get(effiencyRef );
+  //   if(effiencySnapshot.exists()){
+  //     effiencyData = effiencySnapshot.val();
+  //   }
+  // }catch(error){
+  //   console.error("Error retrieving runtime data:", error);
+  // }
+
+  // let totalWorkTimeinMinitues = 0;
+  // let totalQuality = 0;
+  // let effiency = 0;
+  // let smv;
+  // let averageEfficiency = 0;
+  // try {
+  //     const snapshot = await get(runtimeRef);
+  //     if (snapshot.exists()) {
+  //         const runtimeData = snapshot.val();
+
+  //         let totalWorkTime = 0; 
+  //         // Iterate through all keys in the runtimeData, regardless of the totalMembers number
+  //         Object.keys(runtimeData).forEach((key) => {
+  //           const entry = runtimeData[key];  // Access each entry (e.g., { runTime: 213 })
+            
+  //           if (entry && entry.runTime !== undefined) {
+  //               const runtime = entry.runTime;
+  //               const totalMembers = parseInt(key, 10); // Convert key (which is a string) to an integer
+
+  //               // Calculate work time by multiplying totalMembers by runtime
+  //               totalWorkTime += totalMembers * runtime;
+  //           }
+  //           totalWorkTimeinMinitues = totalWorkTime/60;
+  //           if(effiencySnapshot.exists()){
+  //             let totalWorkTimeSum = 0;
+  //             let totalEfficiencySum = 0;
+  //             let count = 0; // To count the number of efficiency entries
+
+  //             // Loop through the entries and sum the totalWorkTimeinMinitues and efficiency values
+  //             effiencySnapshot.forEach((childSnapshot) => {
+  //               const data = childSnapshot.val();
+                
+  //               // Summing total work time
+  //               if (data.totalWorkTime) {
+  //                 totalWorkTimeSum += data.totalWorkTime;
+  //               }
+                
+  //               // Summing efficiency and counting entries
+  //               if (data.effiency) {
+  //                 totalEfficiencySum += data.effiency;
+  //                 count++;
+  //               }
+  //             });
+  //             totalWorkTimeinMinitues= totalWorkTimeinMinitues-totalWorkTimeSum;
+  //             // Calculate the average efficiency
+  //              averageEfficiency = count > 0 ? (totalEfficiencySum / count) : 0;
+  //           }
+  //         });
+       
+  //         console.log("Total Work Time (in seconds):", totalWorkTime);
+  //         console.log("minites "+ totalWorkTimeinMinitues)
+  //         //return totalWorkTime;
+  //     } else {
+  //         console.log("No runtime data available for the given date and line");
+  //         return 0;
+  //     }
+  // } catch (error) {
+  //     console.error("Error retrieving runtime data:", error);
+  //     return 0;
+  // }
+
+  // const firstQualityRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/total1stQuality`);
+  // const qualitySnapshot = await get(firstQualityRef);
+  // if(qualitySnapshot.exists){
+  //   totalQuality= qualitySnapshot.val();
+  //   console.log("1 ;"+totalQuality)
+  // }else{
+  //   console.log("No 1st Qualities for today yet.")
+  // }
+  
+  // const previousSelectedIncompleteBundle = selectedIncompleteBundle;
+  // const smvRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Smv`);
+  
+  // setSelectedIncompleteBundle(""); 
+  // const smvSnapshot = await get(smvRef);
+  //     if (smvSnapshot.exists()) {
+  //        smv = smvSnapshot.val();
+  //        console.log("smv "+smv)
+  //     }
+  
+  //     effiency = (smv*totalQuality)/(totalWorkTimeinMinitues)*100;
+  //     if(averageEfficiency !==0){
+  //       effiency = (effiency + averageEfficiency)/2;
+  //     }
+  //     setEffiency(effiency);
+ // const effiencyRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Effiency`);
+
+  // Use push to create a unique entry
+  await push(effiencyRef, {
+    totalWorkTime: totalWorkTimeinMinitues,
+    effiency: effiency,
+    timestamp: new Date().toISOString(), // Optionally, you can also save a timestamp
+    Quality: totalQuality,
+  });
+
+}
+
+const handleCalculateAndSaveEffiency = async (selectedLine) => {
+  // Calculate total work time, efficiency, and quality
+  const { totalWorkTimeinMinitues, effiency, totalQuality } = await calculateTotalWorkTime(selectedLine);
+
+  // Save the calculated efficiency data
+  await saveEffiency(selectedLine, totalWorkTimeinMinitues, effiency, totalQuality);
+};
+
+const calculateInsentive= async (selectedLine,effiency) => {
+  let insentive = 0;
+  if(effiency>60){
+    insentive=50;
+  }
+}
 
 //const [startTime, setStartTime] = useState(null);
  const [runTime, setRunTime] = useState({ hours: 0, minutes: 0 });
-// const [breakDuration1, setBreakDuration1] = useState(0); // For the first break (10:00 - 10:15)
-// const [breakDuration2, setBreakDuration2] = useState(0); // For the second break (15:00 - 15:15)
-// const [isBreakTimeActive, setIsBreakTimeActive] = useState(false);
-// const [breakStartTime, setBreakStartTime] = useState(null);
 
 // // Simulate server time
  const [serverTime, setServerTime] = useState(new Date());
  const [startTime, setStartTime] = useState(new Date().setHours(7, 30, 0, 0)); // 7:30 AM
 const endTime = new Date().setHours(17, 30, 0, 0); // 5:30 PM
 
-// useEffect(() => {
-//   const intervalId = setInterval(() => {
-//     const currentTime = new Date();
-
-//     // Define break periods
-//     const isBreak1 = currentTime.getHours() === 12 && currentTime.getMinutes() >= 15 && currentTime.getMinutes() < 17;
-//     const isBreak2 = currentTime.getHours() === 15 && currentTime.getMinutes() >= 0 && currentTime.getMinutes() < 15;
-//     const isBreakTime = isBreak1 || isBreak2;
-
-//     if (isBreakTime) {
-//       if (!isBreakTimeActive) {
-//         setIsBreakTimeActive(true);
-//         setBreakStartTime(currentTime.getTime());
-//       }
-//     } else {
-//       if (isBreakTimeActive) {
-//         const breakEndTime = currentTime.getTime();
-//         const breakTime = breakEndTime - breakStartTime;
-
-//         if (isBreak1) {
-//           setBreakDuration1(15 * 60 * 1000); // 15 minutes in milliseconds
-//         } else if (isBreak2) {
-//           setBreakDuration2(15 * 60 * 1000); // 15 minutes in milliseconds
-//         }
-
-//         setIsBreakTimeActive(false);
-//         setBreakStartTime(null);
-//       }
-
-//       // Calculate total break duration
-//       const totalBreakDuration = breakDuration1 + breakDuration2;
-
-//       if (startTime) {
-//         // Calculate elapsed time minus break duration
-//         const elapsedTimeInSeconds = Math.floor((Date.now() - startTime - totalBreakDuration) / 1000); // seconds
-//         const hours = Math.floor(elapsedTimeInSeconds / 3600);
-//         const minutes = Math.floor((elapsedTimeInSeconds % 3600) / 60);
-
-//         setRunTime({ hours, minutes });
-//       }
-//     }
-
-//     // Handle break time modal visibility (optional)
-//     if (isBreakTime && !isBreakTimeModalOpen) {
-//       setIsBreakTimeModalOpen(true);
-//     } else if (!isBreakTime && isBreakTimeModalOpen) {
-//       setIsBreakTimeModalOpen(false);
-//     }
-//   }, 1000);
-
-//   return () => clearInterval(intervalId);
-// }, [isBreakTimeActive, breakDuration1, breakDuration2, startTime,isBreakTimeModalOpen]);
 
 //run the server time
 useEffect(() => {
@@ -1195,24 +2015,6 @@ const [bundleData, setBundleData] = useState(null);
   // Function to fetch bundles based on the selected line
   useEffect(() => {
 
-  //  const bundlesRef = ref(database, `Inqueue/${selectedLine}`);
-  //  // const bundlesRef = ref(database, `currentOperations/${selectedLine}`);
-    
-
-  //   // Listen for changes in the selected line's bundles
-  //   const unsubscribe = onValue(bundlesRef, (snapshot) => {
-  //     const data = snapshot.val();
-  //     if (data) {
-  //       const bundleList = Object.keys(data);
-  //       setBundles(bundleList);
-  //     } else {
-  //       setBundles([]); // Reset if no bundles found
-  //     }
-  //     setSelectedBundle(""); // Reset the selected bundle when the line changes
-  //   });
-
-  //   // Cleanup listener on component unmount
-  //   return () => unsubscribe();
   const inqueueRef = ref(database, `Inqueue/${selectedLine}`);
   const operationsRef = ref(database, `currentOperations/${selectedLine}`);
 
@@ -1351,7 +2153,7 @@ useEffect(() => {
     // Retrieve the data of the selected incomplete bundle
     onValue(incompleteBundleRef, (snapshot) => {
       const data = snapshot.val();
-      console.log("Incomplete bundle data:", data); // Log the incomplete bundle data
+      //console.log("Incomplete bundle data:", data); // Log the incomplete bundle data
       
       if (data) {
         setIncompleteBundleData(data); // Store the incomplete bundle data
@@ -1362,11 +2164,6 @@ useEffect(() => {
     });
   }
 }, [selectedIncompleteBundle, selectedLine]);
-
-useEffect(() => {
-  console.log("Incomplete bundles:", incompleteBundles);
-  console.log("Selected incomplete bundle:", selectedIncompleteBundle);
-}, [incompleteBundles, selectedIncompleteBundle]);
 
 
 const [pendingValue, setPendingValue] = useState(null);
@@ -1444,90 +2241,105 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
     }
   };
 
+
   function handleCheckPendingAndSave() {
     // Step 1: Check if pending is equal to 0
     if (pendingValue === 0) {
 
       let currentOperationsRef;
-      
-      // Determine the current operations path based on selected bundle
-      if (selectedIncompleteBundle) {
-        currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedIncompleteBundle}`);      
-      } else if (selectedBundle) {
-        currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedBundle}`)
-      } else {
-        console.error("No valid selection made.");
-        return;
+  
+  // Determine the current operations path based on selected bundle
+  if (selectedIncompleteBundle) {
+    currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedIncompleteBundle}`);
+  } else if (selectedBundle) {
+    currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedBundle}`);
+  } else {
+    console.error("No valid selection made.");
+    return;
+  }
+
+  // Step 1: Retrieve data from `currentOperations/{selectedLine}/{selectedBundle}`
+  get(currentOperationsRef)
+    .then((snapshot) => {
+      if (!snapshot.exists()) {
+        throw new Error("Order data not found in currentOperations");
       }
-  
-      // Step 2: Retrieve data from `currentOperations/{selectedLine}/{selectedBundle}`
-      get(currentOperationsRef)
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            const orderData = snapshot.val(); // Get data from currentOperations
-  
-            // Prepare data to be used for updates
-            const {
-              italyPo,
-              productionPO,
-              styleNumber,
-              colour,
-              colourCode,
-              size,
-              "1stQuality": newFirstQuality,
-              "2ndQuality": newSecondQuality,
-              Rejection: newRejection,
-            } = orderData;
-  
-            // Step 3: Check if data exists in Line Operations under `${orderData.orderId}/${orderData.size}`
-            const lineOperationsRef = ref(database, `Line Operations/${orderData.orderId}/${orderData.productionPO}`);
-            
-            return get(lineOperationsRef).then((lineSnapshot) => {
-              if (lineSnapshot.exists()) {
-                const existingData = lineSnapshot.val();
-  
-                // If data exists, retrieve and update only the quality and rejection values
-                const updatedFirstQuality = (existingData["1stQuality"] || 0) + (newFirstQuality || 0);
-                const updatedSecondQuality = (existingData["2ndQuality"] || 0) + (newSecondQuality || 0);
-                const updatedRejection = (existingData.Rejection || 0) + (newRejection || 0);
-  
-                // Update the existing data
-                return set(lineOperationsRef, {
-                  ...existingData, // Keep existing values
-                  "1stQuality": updatedFirstQuality,
-                  "2ndQuality": updatedSecondQuality,
-                  Rejection: updatedRejection,
-                 // startDate: existingData.startDate || serverTimestamp(), // Keep startDate if already set
-                });
-              } else {
-                // If no data exists, set all values as new
-                return set(lineOperationsRef, {
-                  italyPo,
-                  productionPO,
-                  styleNumber,
-                  colour,
-                  colourCode,
-                  size,
-                  "1stQuality": newFirstQuality || 0,
-                  "2ndQuality": newSecondQuality || 0,
-                  Rejection: newRejection || 0,
-                  startDate: serverTimestamp(), // Use Firebase server timestamp
-                });
-              }
-            });
-          } else {
-            throw new Error("Order data not found in currentOperations");
-          }
+
+      const orderData = snapshot.val(); // Get data from currentOperations
+      
+      // Prepare data to be used for updates
+      const {
+        italyPo,
+        productionPO,
+        styleNumber,
+        colour,
+        colourCode,
+        size,
+        "1stQuality": newFirstQuality,
+        "2ndQuality": newSecondQuality,
+        Rejection: newRejection,
+      } = orderData;
+
+      // Step 2: Check if data exists in Line Operations under `${orderData.orderId}/${orderData.productionPO}`
+      const lineOperationsRef = ref(database, `Line Operations/${orderData.orderId}/${orderData.productionPO}`);
+      
+      return get(lineOperationsRef).then((lineSnapshot) => {
+        if (lineSnapshot.exists()) {
+          const existingData = lineSnapshot.val();
+
+          // If data exists, retrieve and update only the quality and rejection values
+          const updatedFirstQuality = (existingData["1stQuality"] || 0) + (newFirstQuality || 0);
+          const updatedSecondQuality = (existingData["2ndQuality"] || 0) + (newSecondQuality || 0);
+          const updatedRejection = (existingData.Rejection || 0) + (newRejection || 0);
+
+          // Update the existing data
+          return set(lineOperationsRef, {
+            ...existingData, // Keep existing values
+            "1stQuality": updatedFirstQuality,
+            "2ndQuality": updatedSecondQuality,
+            Rejection: updatedRejection,
+          });
+        } else {
+          // If no data exists, set all values as new
+          return set(lineOperationsRef, {
+            italyPo,
+            productionPO,
+            styleNumber,
+            colour,
+            colourCode,
+            size,
+            "1stQuality": newFirstQuality || 0,
+            "2ndQuality": newSecondQuality || 0,
+            Rejection: newRejection || 0,
+          });
+        }
+      })
+    })
+    .then(() => {
+      console.log("Order data successfully updated in Line Operations and daily runtime updated.");
+      alert("Bundle completed successfully.");
+      handleFinish();
+      remove(currentOperationsRef); // Remove the current operation after completion
+    })
+    .catch((error) => {
+      console.error("Error updating order data or daily runtime:", error);
+    });
+    const currentDate = new Date().toISOString().split('T')[0];
+      // Define the reference for dailyUpdates using the current date and selected line
+     const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+
+        // Update the dailyUpdatesRef with the new pause time
+        update(dailyUpdatesRef, {
+          endTime: serverTimestamp(), // Optionally update the startTime to resume
+          isPaused: true,
         })
-        .then(() => {
-          console.log("Order data successfully updated in Line Operations");
-          alert("Bundle compeleted successfully.")
-          handleFinish();
-          remove(currentOperationsRef);
-        })
-        .catch((error) => {
-          console.error("Error updating order data:", error);
-        });
+          .then(() => {
+            console.log('Pause time calculated and updated successfully.');
+            //setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+          })
+          .catch((error) => {
+            console.error('Error updating pause time:', error);
+          });   
     } else {
       console.log("Pending is not 0, no action taken.");
     }
@@ -1644,7 +2456,7 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
                 <th>Production PO</th>
                 <th>Color</th>
                 <th>Color Code</th>
-                <th>Start Date</th> 
+                <th>Quantity</th> 
               </tr>
             </thead>
             <tbody>
@@ -1656,7 +2468,7 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
                 <td>{incompleteBundleData.productionPO}</td>
                 <td>{incompleteBundleData.colour}</td>     
                 <td>{incompleteBundleData.colourCode}</td>    
-                <td>{new Date(incompleteBundleData.startDate).toLocaleDateString()}</td>             
+                <td>{(incompleteBundleData.noOfPieces)}</td>             
               </tr>
             </tbody>
           </table>
@@ -1664,12 +2476,7 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
       )}
      
     </div>
-    {/* <td>{operationData.bundleId}</td>
-                <td>{operationData.orderId}</td>
-                <td>{operationData.italyPo}</td>
-                <td>{operationData.startDate}</td>
-                <td>{operationData.rejection}</td>
-                <td>{operationData.firstQuality}</td> */}
+
       <div>
       {serverTime ? (
         <div>
@@ -1679,33 +2486,7 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
       ) : (
         <p>Loading server time...</p>
       )}
-        {/* <h2>Add Order to {selectedLine}</h2>
-        <label>
-          Order Number:
-          <input
-            type="text"
-            value={orderNumber}
-            onChange={(e) => handleInputChange(e, setOrderNumber)} required
-          />
-        </label>
-        <br />
-        <label>
-          Bundle ID:
-          <input
-            type="text"
-            value={bundleId}
-            onChange={(e) => handleInputChange(e, setBundleId)} required
-          />
-        </label>
-        <br />
-        <label>
-          Italy PO:
-          <input
-            type="text"
-            value={italyPo}
-            onChange={(e) => handleInputChange(e, setItalyPo)} required
-          />
-        </label> */}
+
         <br />
         <button onClick={handleStart} disabled={!validateInputs() || isStarted && !isFinished}>Start</button>
         <button
@@ -1724,7 +2505,7 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
 
         {isFinished && <p>Time Elapsed: {formatTime(timer)}</p>}
       </div>
-      <button onClick={openModal}>Open Modal</button>
+      <button onClick={openModal}  disabled={isStarted && !isPaused} >Add members to the line</button>
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
       <div>
@@ -1753,6 +2534,8 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
         <p>No employees found for this line.</p>
       )}
     </div>
+      <button onClick={() => removeHostMember(selectedLine)}>Remove Host Member</button>
+      <button onClick={() => removeGuestMember(selectedLine)}>Remove Guest Member</button>
         <button onClick={closeModal}>Close Modal</button>
       </Modal>
       {data ? (
@@ -1814,9 +2597,16 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
       <h2>Break Time!</h2>
       <p>The break is from 12:37 PM to 12:40 PM and 3:00 PM to 3:15 PM.</p>
       </BreakTimeModal>
-      <Timer/>
     </div>
     
+    <div>
+      {effiency !== null && !isNaN(effiency) ? (
+        <p>Today Efficiency: {parseFloat(effiency).toFixed(2)} %</p>
+      ) : (
+        <p>No data yet.</p>
+      )}
+    </div>
+
     </div>
   );
 }
