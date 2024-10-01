@@ -86,6 +86,11 @@ export const LoginForm = () => {
       });
   };
 
+  const [showPassword, setShowPassword] = useState(false);
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div>
       {/* Header with photo and gradient background */}
@@ -105,10 +110,26 @@ export const LoginForm = () => {
                 required />
           </div>
           <div className='input-box1'>
-            <input type='password'
+          <div className='password-container'>
+              <input
+                type={showPassword ? 'text' : 'password'}
                 placeholder='Password'
                 value={password}
-                onChange={(e) => setPassword(e.target.value)} required />
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="toggle-password"
+              >
+                {showPassword ? (
+                  <i className="fas fa-eye-slash"></i>  
+                ) : (
+                  <i className="fas fa-eye"></i>  
+                )}
+              </button>
+              </div>
           </div>
           {/* Transparent box under username-password section */}
           

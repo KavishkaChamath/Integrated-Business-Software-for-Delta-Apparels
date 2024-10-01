@@ -14,7 +14,8 @@ export const AdminLog = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const [showPassword, setShowPassword] = useState(false);
+  
   // const handleSignIn = (e) => {
   //   e.preventDefault();
   //   signInWithEmailAndPassword(auth, email, password)
@@ -33,8 +34,7 @@ export const AdminLog = () => {
     console.log('Signing in with email:', email);
     
     signInWithEmailAndPassword(auth, email, password)
-    
-       .then((userCredential) => {
+      .then((userCredential) => {
         const user = userCredential.user;
         console.log('User signed in:', user);
 
@@ -54,7 +54,7 @@ export const AdminLog = () => {
               // Check if the occupation is 'Admin'
               if (userData.occupation === 'Admin') {
                 console.log('User is an admin:', userData);
-                 pageHandle(); // Call the pageHandle function to navigate or perform further actions
+                pageHandle(); // Call the pageHandle function to navigate or perform further actions
               } else {
                 console.error('User is not an admin');
                 // Optionally, you can sign out the user if they are not an admin
@@ -74,7 +74,7 @@ export const AdminLog = () => {
             auth.signOut();
             alert('Error fetching user data.');
           });
-       })
+      })
       .catch((error) => {
         console.error('Error signing in:', error.code, error.message);
         alert(`Error signing in: ${error.message}`);
@@ -97,14 +97,12 @@ export const AdminLog = () => {
       });
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div>
-      {/* Header with photo and gradient background
-      <header className="header">
-        <div className="header-content">
-          {/* Adjust the image source to a relative path */}
-        {/* </div>
-      // </header> */} 
 
       {/* Login Form */}
       <div className='wrapper2'>
@@ -122,14 +120,29 @@ export const AdminLog = () => {
               />
             </div>
             <div className='input-box1'>
+            <div className='password-container'>
               <input
-                type='password'
+                type={showPassword ? 'text' : 'password'}
                 placeholder='Password'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="toggle-password"
+              >
+                {showPassword ? (
+                  <i className="fas fa-eye-slash"></i>  
+                ) : (
+                  <i className="fas fa-eye"></i>  
+                )}
+              </button>
             </div>
+          </div>
+
+            
             {/* Transparent box under username-password section */}
 
             <div className="remember-forgot">            

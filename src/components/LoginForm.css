@@ -238,3 +238,25 @@ button[type='submit']:hover {
   text-decoration: none;
   font-size: medium;
 }
+
+.password-container {
+  position: relative;
+  width: 100%;
+}
+
+.password-container input {
+  width: 100%;
+  padding-right: 50px; /* To leave space for the button */
+}
+
+.password-container .toggle-password {
+  position: absolute;
+  right: 10px;  /* Adjust this to align it properly inside the input */
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  font-size: 14px;
+}
