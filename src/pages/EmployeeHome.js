@@ -3,6 +3,7 @@ import ShowData from '../components/ShowData';
 import { useNavigate } from 'react-router-dom';
 import SignOut from "../components/SignOut";
 import Titlepic from "../components/Titlepic";
+import { Helmet } from "react-helmet";
 
 export default function EmployeeHome(){
 
@@ -12,6 +13,9 @@ export default function EmployeeHome(){
 
     return(
         <div className="holder">
+            <Helmet>
+                <title>Employee details</title>
+            </Helmet>
         <div>
             <Titlepic/>
             <SignOut/>

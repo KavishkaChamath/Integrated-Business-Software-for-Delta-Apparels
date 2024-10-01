@@ -5,6 +5,7 @@ import { ref, set } from 'firebase/database';
 import { useNavigate } from 'react-router-dom';
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
+import { Helmet } from 'react-helmet';
 
 export const Signup = () => {
   const [email, setEmail] = useState('');
@@ -44,6 +45,9 @@ export const Signup = () => {
 
   return (
     <div>
+      <Helmet>
+        <title>Add User</title>
+      </Helmet>
       <Titlepic/>
       <SignOut/>
     
