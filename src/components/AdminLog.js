@@ -6,6 +6,7 @@ import img21 from './Images/img21.png';
 import './LoginForm.css';
 import { ref, query, orderByChild, equalTo, get } from 'firebase/database';
 import { database } from '../Firebase';
+import { Helmet } from 'react-helmet';
 
 export const AdminLog = () => {
 
@@ -103,7 +104,9 @@ export const AdminLog = () => {
 
   return (
     <div>
-
+      <Helmet>
+        <title>Admin Login</title>
+      </Helmet>
       {/* Login Form */}
       <div className='wrapper2'>
         <div className="admintransparent-box">

@@ -24,6 +24,7 @@ import Bundle from './components/Bundle';
 import Cutting from './components/Cutting';
 import CutHome from './pages/CutHome';
 import InqueueTable from './components/Inqueue';
+import CheckPauseTime from './components/Admin/CheckPauseTime';
 
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
        <Route path="/comp/bundle" element={<Bundle/>} />
        <Route path="/comp/cutting" element={<Cutting/>} />
        <Route path="/comp/inqueue" element={<InqueueTable/>} />
+       <Route path="/comp/admin/pauseTime" element={<CheckPauseTime/>} /> 
        <Route path="/" element={<Home />} />
       </Routes>
     </Router>

@@ -5,6 +5,7 @@ import { database } from '../Firebase';
 
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
+import { Helmet } from 'react-helmet';
 
 const EditOrder = () => {
   const location = useLocation();
@@ -144,6 +145,9 @@ const EditOrder = () => {
   return (
     
     <div>
+      <Helmet>
+        <title>Edit Data</title>
+      </Helmet>
       <Titlepic/>
       <SignOut/>
       <div className='holder'>

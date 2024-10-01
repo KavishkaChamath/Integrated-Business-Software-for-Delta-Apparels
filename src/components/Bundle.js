@@ -3,6 +3,7 @@ import { ref, get, remove, set } from 'firebase/database';
 import { database } from '../Firebase'; // Ensure correct Firebase configuration import
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
+import { Helmet } from 'react-helmet';
 
 const Bundle = () => {
   const [orderNumber, setOrderNumber] = useState('');
@@ -261,8 +262,12 @@ const handleCutNumberChange = (e) => {
 
   return (
     <div>
+      <Helmet>
+        <title>Bundle Details</title>
+      </Helmet>
       <Titlepic/>
       <SignOut/>
+      
     <h1>Search Cutting Details</h1>
     <input
       type="text"

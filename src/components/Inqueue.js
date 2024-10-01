@@ -3,6 +3,7 @@ import { ref, get } from 'firebase/database';
 import { database } from '../Firebase'; // Assuming you've initialized Firebase
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
+import { Helmet } from 'react-helmet';
 
 const InqueueTable = () => {
   const [linesData, setLinesData] = useState({});
@@ -159,6 +160,9 @@ const fetchOrderDetails = async (orderNumber,italyPo,productionPo) => {
 
   return (
     <div>
+      <Helmet>
+        <title>Inqueue </title>
+      </Helmet>
       <Titlepic />
       <SignOut />
       <h1>Inqueue Bundles Data</h1>

@@ -8,8 +8,7 @@ import Modal from '../components/Line/Model';
 import BreakTimeModal from '../components/Line/BreakTimeModel';
 import RejectionModal from '../components/Line/PasswordModel';
 import {  query, orderByChild, equalTo, update, runTransaction } from 'firebase/database';
-
-import { Timestamp } from 'firebase/firestore';
+import { Helmet } from 'react-helmet';
 
 export default function LineHome() {
 
@@ -72,6 +71,7 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
   useEffect(() => {
     retrievemembersData(selectedLine);
     retrieveTotalFirstQuality(selectedLine);
+    retrieveEffiency(selectedLine);
   }, [selectedLine]);
 
   const getCurrentDate = () => {
@@ -88,6 +88,11 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
     };
 
   const handleStart = async ()  => { 
+
+    if(!validateInputs()){
+      alert("Select order to start the process");
+      return;
+    }
 
     const id = setInterval(() => {
       setTimer(prevTime => prevTime + 1);
@@ -472,6 +477,8 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
         console.log("End time and isPaused status updated in the database.");
         setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
         calculateRunTime(selectedLine);  // Calculate runtime after updating end time
+      }).then(()=>{
+        calculateTotalWorkTime(selectedLine);
       })
       .catch((error) => {
         console.error("Failed to update endTime or isPaused:", error);
@@ -513,7 +520,7 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
     setPendingValue(null);
     setOrderData(null);
     setIncompleteBundleData(null);
-   
+  
     const currentDate = new Date().toISOString().split('T')[0];
     const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
     await update(dailyUpdatesRef ,{
@@ -1016,6 +1023,7 @@ const firstTotalRunTime = async(selectedLine)=>{
                         endTime:"",
                         pauseTime: "",
                         Smv: "",
+                        CurrentEffiency: "",
                       })
                         .then(() => {
                           console.log('Host members count set to 1.');
@@ -1045,6 +1053,7 @@ const firstTotalRunTime = async(selectedLine)=>{
                         endTime:"",
                         pauseTime: "",
                         Smv: "",
+                        CurrentEffiency:"",
                        })
                         .then(() => {
                           console.log('Guest members count set to 1.');
@@ -1122,6 +1131,33 @@ const firstTotalRunTime = async(selectedLine)=>{
       } else {
         console.log("No data available");
         setData({ hostMembers: 0, guestMembers: 0 });
+      }
+    }, (error) => {
+      console.error("Error fetching data:", error);
+    });
+
+    // Return the unsubscribe function to clean up the listener
+    return unsubscribe;
+  };
+
+  const retrieveEffiency = (line) => {
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    if (!line) {
+      console.error("Line cannot be undefined");
+      return;
+    }
+
+    const dbPath = `dailyUpdates/${currentDate}/${line}/CurrentEffiency`;
+    const dataRef = ref(database, dbPath);
+
+    // Set up a real-time listener for the data
+    const unsubscribe = onValue(dataRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setEffiency(snapshot.val());
+      } else {
+        console.log("No data available");
+        setEffiency(0);
       }
     }, (error) => {
       console.error("Error fetching data:", error);
@@ -1512,6 +1548,8 @@ const handleUpdateRejection = () => {
 
 const hasExecutedRunTimeUpdate= useRef(false);
 const hasExecutedPauseTimeUpdate = useRef(false);
+const hasExecutedRunTimeUpdateForLunch= useRef(false);
+const hasExecutedPauseTimeUpdateForLunch = useRef(false);
 
 
 useEffect(() => {
@@ -1557,57 +1595,18 @@ useEffect(() => {
             
             // Check if current time is within break periods
             const isBreakTime = (
-              (currentTime.getHours() === 18 && currentTime.getMinutes() >= 21 && currentTime.getMinutes() < 22) ||
+              (currentTime.getHours() === 15 && currentTime.getMinutes() >= 6 && currentTime.getMinutes() < 22) ||
               (currentTime.getHours() === 18 && currentTime.getMinutes() >= 23 && currentTime.getMinutes() < 24)
             );
 
-            // const isLunchTime1 =(
-            //   (currentTime.getHours() === 18 && currentTime.getMinutes() >= 18 && currentTime.getHours() === 18 && currentTime.getMinutes() < 19)
-            // );
-            // const isLunchTime2 =(
-            //   (currentTime.getHours() === 18 && currentTime.getMinutes() >= 20 && currentTime.getMinutes() < 21)
-            // );
-
-            // // Ensure `selectedLine` is correct here
-            // //console.log("Selected line inside interval:", selectedLine);
-            // if(selectedLine==='Line 1' || selectedLine ==="Line 2" || selectedLine ==="Line 3"){
-            //   if (isLunchTime1 && !isBreakTimeModalOpen) {
-            //     setIsBreakTimeModalOpen(true); // Open break time modal
-            //     hasExecutedPauseTimeUpdate.current = false; // Reset for the next break
-                
-            //     if (!hasExecutedRunTimeUpdate.current) {
-            //         getCurrentRunTime(selectedLine); // Call the function to update run time
-            //         hasExecutedRunTimeUpdate.current = true; // Mark as executed                  
-            //     }
-            //   } else if (!isLunchTime1 && isBreakTimeModalOpen) {
-            //     setIsBreakTimeModalOpen(false); // Close break time modal
-            //     hasExecutedRunTimeUpdate.current = false; // Reset for the next break
-                
-            //     if (!hasExecutedPauseTimeUpdate.current) {
-            //         updatePauseTime(selectedLine); // Call the function to update pause time
-            //         hasExecutedPauseTimeUpdate.current = true; // Mark as executed
-            //     }
-            //   }
-            // }
-            // if(selectedLine==='Line 4' || selectedLine ==="Line 5" || selectedLine ==="Line 6"){
-            //   if (isLunchTime2 && !isBreakTimeModalOpen) {
-            //     setIsBreakTimeModalOpen(true); // Open break time modal
-            //     hasExecutedPauseTimeUpdate.current = false; // Reset for the next break
-                
-            //     if (!hasExecutedRunTimeUpdate.current) {
-            //         getCurrentRunTime(selectedLine); // Call the function to update run time
-            //         hasExecutedRunTimeUpdate.current = true; // Mark as executed                  
-            //     }
-            //   } else if (!isLunchTime2 && isBreakTimeModalOpen) {
-            //     setIsBreakTimeModalOpen(false); // Close break time modal
-            //     hasExecutedRunTimeUpdate.current = false; // Reset for the next break
-                
-            //     if (!hasExecutedPauseTimeUpdate.current) {
-            //         updatePauseTime(selectedLine); // Call the function to update pause time
-            //         hasExecutedPauseTimeUpdate.current = true; // Mark as executed
-            //     }
-            //   }
-            // }
+            let isLunchTime = false;
+            if (selectedLine === 'Line 1' || selectedLine === 'Line 2' || selectedLine === 'Line 3' ) {
+              // Break time for lines 1 to 3: 14:45 - 15:00
+              isLunchTime = (currentTime.getHours() === 15 && currentTime.getMinutes() >= 42 && currentTime.getMinutes() < 43);
+            } else if (selectedLine === 'Line 4' || selectedLine === 'Line 4'||selectedLine === 'Line 6') {
+              // Break time for lines 4 to 6: 15:00 - 15:30
+              isLunchTime = (currentTime.getHours() === 15 && currentTime.getMinutes() >= 0 && currentTime.getMinutes() < 30);
+            }
 
             if (isBreakTime && !isBreakTimeModalOpen) {
               setIsBreakTimeModalOpen(true); // Open break time modal
@@ -1627,6 +1626,56 @@ useEffect(() => {
               }
             }
 
+            // let isLunchTime = false;
+            // if (selectedLine >= 'Line 1' && selectedLine <= 'Line 3') {
+            //   // Break time for lines 1 to 3: 14:45 - 15:00
+            //   console.log("hello 1")
+            //   isLunchTime  = (
+            //     (currentTime.getHours() === 15 && currentTime.getMinutes() >= 4) ||
+            //     (currentTime.getHours() === 15 && currentTime.getMinutes() < 5)
+            //   );
+            // } else if (selectedLine >= 'Line 4' && selectedLine <= 'Line 6') {
+            //   // Break time for lines 4 to 6: 15:00 - 15:30
+            //   console.log("hello 2")
+            //   isLunchTime = (
+            //     (currentTime.getHours() === 15 && currentTime.getMinutes() >= 50 && currentTime.getMinutes() < 55)
+            //   );
+            // }
+
+            // if (isLunchTime && !isBreakTimeModalOpen) {
+            //   setIsBreakTimeModalOpen(true); // Open break time modal
+            //   hasExecutedPauseTimeUpdateForLunch.current = false; // Reset for the next break
+              
+            //   if (!hasExecutedRunTimeUpdateForLunch.current) {
+            //       getCurrentRunTime(selectedLine); // Call the function to update run time
+            //       hasExecutedRunTimeUpdateForLunch.current = true; // Mark as executed
+            //   }
+            // } else if (!isLunchTime && isBreakTimeModalOpen) {
+            //   setIsBreakTimeModalOpen(false); // Close break time modal
+            //   hasExecutedRunTimeUpdateForLunch.current = false; // Reset for the next break
+              
+            //   if (!hasExecutedPauseTimeUpdateForLunch.current) {
+            //       updatePauseTime(selectedLine); // Call the function to update pause time
+            //       hasExecutedPauseTimeUpdateForLunch.current = true; // Mark as executed
+            //   }
+            // }
+             // Modal management for lunch time
+             if (isLunchTime && !isBreakTimeModalOpen) {
+              setIsBreakTimeModalOpen(true);
+              hasExecutedPauseTimeUpdateForLunch.current = false;
+              if (!hasExecutedRunTimeUpdateForLunch.current) {
+                console.log("menna wedak")
+                getCurrentRunTime(selectedLine);
+                hasExecutedRunTimeUpdateForLunch.current = true;
+              }
+            } else if (!isLunchTime && isBreakTimeModalOpen) {
+              setIsBreakTimeModalOpen(false);
+              hasExecutedRunTimeUpdateForLunch.current = false;
+              if (!hasExecutedPauseTimeUpdateForLunch.current) {
+                updatePauseTime(selectedLine);
+                hasExecutedPauseTimeUpdateForLunch.current = true;
+              }
+            }
             // Only update runtime if it's not break time
             if (!isBreakTime) {
               const elapsedTimeInSeconds = Math.floor((Date.now() - startTime) / 1000); // seconds
@@ -1702,6 +1751,9 @@ const calculateTotalWorkTime = async (selectedLine) => {
 
   const currentDate = new Date().toISOString().split('T')[0];
 
+  const previousSelectedIncompleteBundle = selectedIncompleteBundle;
+  setSelectedIncompleteBundle("");
+  
   const runtimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime`);
   const effiencyRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Effiency`);
   let effiencyData;
@@ -1785,10 +1837,9 @@ const calculateTotalWorkTime = async (selectedLine) => {
     console.log("No 1st Qualities for today yet.")
   }
   
-  const previousSelectedIncompleteBundle = selectedIncompleteBundle;
   const smvRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Smv`);
-  
-  setSelectedIncompleteBundle(""); 
+  const currentEffiRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+
   const smvSnapshot = await get(smvRef);
       if (smvSnapshot.exists()) {
          smv = smvSnapshot.val();
@@ -1800,7 +1851,13 @@ const calculateTotalWorkTime = async (selectedLine) => {
         effiency = (effiency + averageEfficiency)/2;
       }
       setEffiency(effiency);
+      await update(currentEffiRef, {
+        CurrentEffiency: effiency,
+      });
+      setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+
       return { totalWorkTimeinMinitues, effiency, totalQuality };
+
 }
 
 const saveEffiency= async (selectedLine, totalWorkTimeinMinitues, effiency, totalQuality) => {
@@ -1808,103 +1865,6 @@ const saveEffiency= async (selectedLine, totalWorkTimeinMinitues, effiency, tota
 
   // const runtimeRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/runTime`);
   const effiencyRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Effiency`);
-  // let effiencyData;
-  // let effiencySnapshot;
-  // try{
-  //   effiencySnapshot = await get(effiencyRef );
-  //   if(effiencySnapshot.exists()){
-  //     effiencyData = effiencySnapshot.val();
-  //   }
-  // }catch(error){
-  //   console.error("Error retrieving runtime data:", error);
-  // }
-
-  // let totalWorkTimeinMinitues = 0;
-  // let totalQuality = 0;
-  // let effiency = 0;
-  // let smv;
-  // let averageEfficiency = 0;
-  // try {
-  //     const snapshot = await get(runtimeRef);
-  //     if (snapshot.exists()) {
-  //         const runtimeData = snapshot.val();
-
-  //         let totalWorkTime = 0; 
-  //         // Iterate through all keys in the runtimeData, regardless of the totalMembers number
-  //         Object.keys(runtimeData).forEach((key) => {
-  //           const entry = runtimeData[key];  // Access each entry (e.g., { runTime: 213 })
-            
-  //           if (entry && entry.runTime !== undefined) {
-  //               const runtime = entry.runTime;
-  //               const totalMembers = parseInt(key, 10); // Convert key (which is a string) to an integer
-
-  //               // Calculate work time by multiplying totalMembers by runtime
-  //               totalWorkTime += totalMembers * runtime;
-  //           }
-  //           totalWorkTimeinMinitues = totalWorkTime/60;
-  //           if(effiencySnapshot.exists()){
-  //             let totalWorkTimeSum = 0;
-  //             let totalEfficiencySum = 0;
-  //             let count = 0; // To count the number of efficiency entries
-
-  //             // Loop through the entries and sum the totalWorkTimeinMinitues and efficiency values
-  //             effiencySnapshot.forEach((childSnapshot) => {
-  //               const data = childSnapshot.val();
-                
-  //               // Summing total work time
-  //               if (data.totalWorkTime) {
-  //                 totalWorkTimeSum += data.totalWorkTime;
-  //               }
-                
-  //               // Summing efficiency and counting entries
-  //               if (data.effiency) {
-  //                 totalEfficiencySum += data.effiency;
-  //                 count++;
-  //               }
-  //             });
-  //             totalWorkTimeinMinitues= totalWorkTimeinMinitues-totalWorkTimeSum;
-  //             // Calculate the average efficiency
-  //              averageEfficiency = count > 0 ? (totalEfficiencySum / count) : 0;
-  //           }
-  //         });
-       
-  //         console.log("Total Work Time (in seconds):", totalWorkTime);
-  //         console.log("minites "+ totalWorkTimeinMinitues)
-  //         //return totalWorkTime;
-  //     } else {
-  //         console.log("No runtime data available for the given date and line");
-  //         return 0;
-  //     }
-  // } catch (error) {
-  //     console.error("Error retrieving runtime data:", error);
-  //     return 0;
-  // }
-
-  // const firstQualityRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/total1stQuality`);
-  // const qualitySnapshot = await get(firstQualityRef);
-  // if(qualitySnapshot.exists){
-  //   totalQuality= qualitySnapshot.val();
-  //   console.log("1 ;"+totalQuality)
-  // }else{
-  //   console.log("No 1st Qualities for today yet.")
-  // }
-  
-  // const previousSelectedIncompleteBundle = selectedIncompleteBundle;
-  // const smvRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Smv`);
-  
-  // setSelectedIncompleteBundle(""); 
-  // const smvSnapshot = await get(smvRef);
-  //     if (smvSnapshot.exists()) {
-  //        smv = smvSnapshot.val();
-  //        console.log("smv "+smv)
-  //     }
-  
-  //     effiency = (smv*totalQuality)/(totalWorkTimeinMinitues)*100;
-  //     if(averageEfficiency !==0){
-  //       effiency = (effiency + averageEfficiency)/2;
-  //     }
-  //     setEffiency(effiency);
- // const effiencyRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}/Effiency`);
 
   // Use push to create a unique entry
   await push(effiencyRef, {
@@ -2168,6 +2128,21 @@ useEffect(() => {
 
 const [pendingValue, setPendingValue] = useState(null);
 
+const handleIncompleteBundleChange = (e) => {
+  const value = e.target.value;
+  setSelectedIncompleteBundle(value);
+  setSelectedBundle(""); // Clear the selected bundle when incomplete bundle is chosen
+  setOrderData(null)
+};
+
+const handleBundleChange = (e) => {
+  const value = e.target.value;
+  setSelectedBundle(value);
+  setSelectedIncompleteBundle(""); // Clear the selected incomplete bundle when a bundle is chosen
+  setIncompleteBundleData(null)
+};
+
+
 const countQualities = () => {
  
   let currentOperationsRef;
@@ -2348,6 +2323,9 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
 
   return (
     <div>
+      <Helmet>
+        <title>Line Home</title>
+      </Helmet>
       <Titlepic />
       <SignOut />
 
@@ -2371,7 +2349,7 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
       <h2>Select an Incomplete Bundle</h2>
       <select
         value={selectedIncompleteBundle}
-        onChange={(e) => setSelectedIncompleteBundle(e.target.value)}
+        onChange={handleIncompleteBundleChange }
         disabled={isStarted}
       >
         <option value="">Choose an incomplete bundle</option> {/* Default option */}
@@ -2391,7 +2369,7 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
       <h2>Select a Bundle</h2>
       <select
         value={selectedBundle}
-        onChange={(e) => setSelectedBundle(e.target.value)}
+        onChange={handleBundleChange}
         disabled={isStarted}
       >
         <option value="">Choose a bundle</option> {/* Default option */}
@@ -2488,7 +2466,7 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
       )}
 
         <br />
-        <button onClick={handleStart} disabled={!validateInputs() || isStarted && !isFinished}>Start</button>
+        <button onClick={handleStart} disabled={ isStarted && !isFinished}>Start</button>
         <button
           onClick={handlePauseResume}
           disabled={!isStarted || isFinished}

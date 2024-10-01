@@ -3,6 +3,7 @@ import Titlepic from "../components/Titlepic";
 import { useNavigate } from 'react-router-dom';
 import SignOut from "../components/SignOut";
 import './pages.css'
+import { Helmet } from 'react-helmet';
 
 
 export default function CutHome() {
@@ -13,6 +14,9 @@ export default function CutHome() {
 
   return (
     <div>
+      <Helmet>
+        <title>Cut Home</title>
+      </Helmet>
         <Titlepic/>
         <SignOut/>
         <div>

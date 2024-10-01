@@ -1,73 +1,9 @@
-// import React, { useEffect, useState } from 'react';
-// import { ref, onValue } from 'firebase/database';
-// import { database } from '../Firebase';// Make sure to import your Firebase configuration
-// import './Orderdetails.css'; 
-
-
-// const CuttingDetailsForm = () => {
-//   const [orders, setOrders] = useState([]);
-//   const [searchTerm, setSearchTerm] = useState('');
-//   const [filteredOrders, setFilteredOrders] = useState([]);
-//   const [showActions, setShowActions] = useState(false);
-
-
-//   useEffect(() => {
-//     const orderRef = ref(database, 'orders');
-//     onValue(orderRef, (snapshot) => {
-//       const data = snapshot.val();
-//       if (data) {
-//         const orderList = Object.keys(data).map((key) => ({
-//           id: key,
-//           ...data[key],
-//         }));
-//         // Sort orders by date in descending order (newest first)
-//         const sortedOrders = orderList.sort((a, b) => new Date(b.psd) - new Date(a.psd));
-//         setOrders(sortedOrders);
-
-//       }
-//     });
-//   }, []);
-
-//   const handleSearch = () => {
-//     if (searchTerm.trim() === '') {
-//       // Sort orders by date in descending order (newest first)
-//       const sortedOrders = [...orders].sort((a, b) => new Date(b.psd) - new Date(a.psd));
-//       setFilteredOrders(sortedOrders); // Show all orders if search term is empty
-//       setShowActions(false); // Hide actions column
-//     } else {
-//       const filtered = orders.filter(order =>
-//         order.orderNumber.includes(searchTerm) || 
-//         order.customer.toLowerCase().includes(searchTerm.toLowerCase())
-//       );
-//       // Sort filtered results by date in descending order (newest first)
-//       const sortedFiltered = filtered.sort((a, b) => new Date(b.psd) - new Date(a.psd));
-//       setFilteredOrders(sortedFiltered);
-//       setShowActions(sortedFiltered.length > 0); // Show actions column only if there are matching results
-//     }
-//   };
-
-//   return (
-//     <div>
-//      <div>
-//         <input
-//           type="text"
-//           placeholder="Search by Order Number or Customer Name"
-//           value={searchTerm}
-//           onChange={(e) => setSearchTerm(e.target.value)}
-//         />
-//         <button onClick={handleSearch}>Search</button>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default CuttingDetailsForm;
-
 import React, { useEffect, useState } from 'react';
 import { ref, onValue,set,get } from 'firebase/database';
 import { database } from '../Firebase'; // Make sure to import your Firebase configuration
 import './Orderdetails.css';
 import Titlepic from '../components/Titlepic'
+import { Helmet } from 'react-helmet';
 
 const CuttingDetailsForm = () => {
   const [orders, setOrders] = useState([]);
@@ -155,107 +91,6 @@ const CuttingDetailsForm = () => {
     return key.replace(/[.#$/\[\]]/g, '_'); // Replace invalid characters with underscores
   };
   
-  // const handleSave = () => {
-  //   filteredOrders.forEach(order => {
-  //     const sizeKey = sanitizeKey(order.size);
-  //     const cutNumberKey = sanitizeKey(cutNumbers[order.id] || '');
-  
-  //     if (!sizeKey) {
-  //       console.warn(`Invalid size for order ${order.orderNumber}. Skipping save.`);
-  //       return;
-  //     }
-  
-  //     // Only proceed if cutNumberKey and other fields are valid
-  //     if (cutNumberKey && noOfPieces[order.id] && ratios[order.id]) {
-  //       // Reference to the Firebase path for the current size
-  //       const cuttingDetailsRef = ref(database, `Cuttingdetails/${order.orderNumber}/${sizeKey}`);
-  
-  //       // Fetch the existing data
-  //       get(cuttingDetailsRef)
-  //         .then((snapshot) => {
-  //           const existingData = snapshot.val() || {};
-  
-  //           // Prepare new data to be added
-  //           const newCutNumberData = {
-  //             noOfPieces: noOfPieces[order.id] || '',
-  //             ratio: ratios[order.id] || '',
-  //           };
-  
-  //           // Merge existing data with new cut number data
-  //           const updatedData = {
-  //             ...existingData,
-  //             [cutNumberKey]: newCutNumberData,
-  //           };
-  
-  //           // Save the merged data back to Firebase
-  //           return set(cuttingDetailsRef, updatedData);
-  //         })
-  //         .then(() => {
-  //           alert(`Data for order ${order.orderNumber} saved successfully.`);
-  //           setCutNumbers('');
-  //           setCutQuantities('0');
-  //           setNoOfPieces('');
-  //           setRatios('');
-  //         })
-  //         .catch((error) => {
-  //           console.error('Error saving data:', error);
-  //         });
-  //     } else {
-  //       console.warn(`Skipping save for order ${order.orderNumber} due to missing cut number or data.`);
-  //     }
-  //   });
-  // };
-  
-  // const handleSave = () => {
-  //   filteredOrders.forEach(order => {
-  //     const sizeKey = sanitizeKey(order.size);
-  //     const cutNumberKey = sanitizeKey(cutNumbers[order.id] || '');
-  
-  //     if (!sizeKey) {
-  //       console.warn(`Invalid size for order ${order.orderNumber}. Skipping save.`);
-  //       return;
-  //     }
-  
-  //     // Only proceed if cutNumberKey and other fields are valid
-  //     if (cutNumberKey && noOfPieces[order.id] && ratios[order.id]) {
-  //       // Reference to the Firebase path for the current orderNumber and size
-  //       const cuttingDetailsRef = ref(database, `Cuttingdetails/${order.orderNumber}/sizes/${sizeKey}`);
-  
-  //       // Fetch the existing data
-  //       get(cuttingDetailsRef)
-  //         .then((snapshot) => {
-  //           const existingData = snapshot.val() || {};
-  
-  //           // Prepare new data to be added
-  //           const newCutNumberData = {
-  //             noOfPieces: noOfPieces[order.id] || '',
-  //             ratio: ratios[order.id] || '',
-  //           };
-  
-  //           // Merge existing data with new cut number data
-  //           const updatedData = {
-  //             ...existingData,
-  //             [cutNumberKey]: newCutNumberData,
-  //           };
-  
-  //           // Save the merged data back to Firebase
-  //           return set(cuttingDetailsRef, updatedData);
-  //         })
-  //         .then(() => {
-  //           alert(`Data for order ${order.orderNumber} saved successfully.`);
-  //           setCutNumbers('');
-  //            setCutQuantities('0');
-  //            setNoOfPieces('');
-  //            setRatios('');
-  //         })
-  //         .catch((error) => {
-  //           console.error('Error saving data:', error);
-  //         });
-  //     } else {
-  //       console.warn(`Skipping save for order ${order.orderNumber} due to missing cut number or data.`);
-  //     }
-  //   });
-  // };
 
   const handleSave = () => {
     filteredOrders.forEach(order => {
@@ -390,6 +225,9 @@ const CuttingDetailsForm = () => {
 
   return (
     <div>
+      <Helmet>
+        <title>Cut Details</title>
+      </Helmet>
       <Titlepic/>
       <div>
         <input
