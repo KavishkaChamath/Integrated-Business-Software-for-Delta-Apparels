@@ -216,8 +216,8 @@ export const Orderdetails = () => {
 
 
       {/* Order details */}
-      <div className='holder'>
-      <div className='wrapper'>
+      <div className='ordholder'>
+      <div className='ordwrapper'>
         <div className="transparent-box">
           <h2>Add Order</h2>
           <form className='order-form' onSubmit={handleSubmit}>
@@ -358,6 +358,9 @@ export const Orderdetails = () => {
         </div>
       </div>
     </div>
+    <div className="footer">
+        <p>&copy; 2024 Delta Apparels</p>
+      </div>
     </div>
   );
 };

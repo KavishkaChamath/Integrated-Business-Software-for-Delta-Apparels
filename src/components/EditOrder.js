@@ -5,7 +5,6 @@ import { database } from '../Firebase';
 
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
-import { Helmet } from 'react-helmet';
 
 const EditOrder = () => {
   const location = useLocation();
@@ -122,15 +121,12 @@ const EditOrder = () => {
   return (
     
     <div>
-      <Helmet>
-        <title>Edit Data</title>
-      </Helmet>
       <Titlepic/>
       <SignOut/>
-      <div className='holder'>
-      <div className='wrapper'>
+      <div className='ordholder'>
+      <div className='ordwrapper'>
         <div className="transparent-box">
-          <h2>Add Order</h2>
+          <h2>Edit Order</h2>
           <form className='order-form' onSubmit={handleSubmit}>
             <div className='form-group1'>
               <label>Order Number</label>

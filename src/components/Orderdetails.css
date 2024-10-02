@@ -27,50 +27,27 @@
 }
 
 /* Form styles */
-.wrapper {
+.ordwrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-background: url('../components/Images/img30.jpg') no-repeat center 30% fixed;
-    background-size: 100vw 100vh; /* cover the entire viewport */
-    background-size: cover; /* add this to ensure the image is stretched to fit the full height */
-    width: auto; /* set width to 100% of viewport width */
-    height: 85vh; /* set height to 100% of viewport height */
-    flex-shrink: 0;
-    margin: 0; /* remove any margin */
-    padding: 0; /* remove any padding */
-    overflow: hidden; /* add this to prevent the page from becoming scrollable */
-    background-attachment: fixed;
-    background-size: cover;
-    width: 100vw;
-    height: 100vh;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    /* Add a whitish overlay */
-    background-color: rgba(177, 248, 253, 0.311);
-    background-blend-mode: lighten;
-}
-.holder{
   background: url('../components/Images/img30.jpg') no-repeat center 30% fixed;
-  background-size: 100vw 100vh; /* cover the entire viewport */
   background-size: cover; /* add this to ensure the image is stretched to fit the full height */
   width: auto; /* set width to 100% of viewport width */
-  height: 85vh; /* set height to 100% of viewport height */
-  flex-shrink: 0;
-  margin: 0; /* remove any margin */
-  padding: 0; /* remove any padding */
-  overflow: hidden; /* add this to prevent the page from becoming scrollable */
-  background-attachment: fixed;
-  background-size: cover;
-  width: 100vw;
-  height: 100vh;
-
-  /* Add a whitish overlay */
-  background-color: rgba(177, 248, 253, 0.311);
+  background-color: rgba(177, 248, 253, 0.311); 
   background-blend-mode: lighten;
 }
+.empwrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: url('../components/Images/img30.jpg') no-repeat center 30% fixed;
+  background-size: cover; /* add this to ensure the image is stretched to fit the full height */
+  width: auto; /* set width to 100% of viewport width */
+  background-color: rgba(177, 248, 253, 0.311); 
+  background-blend-mode: lighten;
+}
+
 
 
 .form-wrapper {
@@ -93,25 +70,55 @@ h2 {
 .order-form {
   display: flex;
   flex-wrap: wrap;
-  width: 100%;
-  max-width: 900px;
+  width: 90%;
+  max-width: 950px;
   background: rgba(255, 255, 255, 0.527);
   padding: 2em;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
+.employee-form {
+  display: flex;
+  flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.527);
+  padding: 2em;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 900px;
+
+}
+
+@media (max-width: 1000px) {
+  .employee-form{
+    display: flex;
+    flex-wrap: wrap;
+    background: rgba(255, 255, 255, 0.527);
+    padding: 2em;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+
+  }
+}
 
 .form-group1{
   display:flex;
   flex-direction: row;
-  width: 45%; /* Adjust the width to fit two columns */
+  width: 400px; /* Adjust the width to fit two columns */
   margin: 0 2.5% 1em 2.5%; /* Add horizontal margin for spacing */
 }
+.form-group1 label{
+  width: 200px;
+}
 
-.form-group2 {
-  display: flex;
+.form-group2{
+  display:flex;
+  flex-direction: row;
   width: 80%; /* Adjust the width to fit two columns */
   margin: 0 2.5% 1em 2.5%; /* Add horizontal margin for spacing */
+}
+.form-group2 label{
+  width: 400px;
 }
 
 .cutform{
@@ -122,7 +129,6 @@ h2 {
 
 label {
   font-weight: bold;
-  
   color: #040940;
   margin-bottom: 0.5em;
 }
@@ -191,7 +197,84 @@ button[type='submit']:hover {
   }
 }
 
+.ordTable table{
+  width: 97%; 
+  background-color: #9dd7fe9f;
+  border-color: blue;
+}
 
+.deleteOrd{
+  margin-top: 0.5ch;
+  margin-bottom: 0.5ch;
+  font-size: 14px; /* Increase font size */
+  width: 90px; /* Set a fixed width for the buttons */
+  height: 25px; /* Set a fixed height for the buttons */
+  text-align: center;
+  font-weight:500;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 5px; /* Optional: add rounded corners */
+  background-color: rgba(187, 11, 11, 0.290); /* Optional: change the background color */
+  color: rgb(4, 4, 69); /* Optional: change the text color */
+  cursor: pointer; /* Optional: change cursor to pointer on hover */
+ }
+ .deleteOrd:hover{
+  background-color: rgba(187, 11, 11, 0.512); /* Optional: change background color on hover */
+ }
+ .editOrd{
+  margin-top: 0.5ch;
+  margin-bottom: 0.5ch;
+  font-size: 14px; /* Increase font size */
+  width: 90px; /* Set a fixed width for the buttons */
+  height: 25px; /* Set a fixed height for the buttons */
+  text-align: center;
+  font-weight:500;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 5px; /* Optional: add rounded corners */
+  background-color: rgba(5, 80, 150, 0.290); /* Optional: change the background color */
+  color: rgb(4, 4, 69); /* Optional: change the text color */
+  cursor: pointer; /* Optional: change cursor to pointer on hover */
+ }
+ .editOrd:hover{
+  background-color: rgba(5, 80, 150, 0.512); /* Optional: change background color on hover */
+ }
+
+ .addSize{
+  margin-top: 0.5ch;
+  margin-left: 1ch;
+  margin-bottom: 1.5ch;
+  font-size: 14px; /* Increase font size */
+  width: 250px; /* Set a fixed width for the buttons */
+  height: 30px; /* Set a fixed height for the buttons */
+  text-align: center;
+  font-weight:500;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 5px; /* Optional: add rounded corners */
+  background-color: #7299b4c5; /* Optional: change the background color */
+  color: rgb(4, 4, 69); /* Optional: change the text color */
+  cursor: pointer; /* Optional: change cursor to pointer on hover */
+ }
+ .addSize:hover{
+  background-color: rgba(104, 158, 240, 0.512); /* Optional: change background color on hover */
+ }
+
+ .editaddSize{
+  margin-top: 1.5ch;
+  margin-left: 1ch;
+  margin-bottom: 1.5ch;
+  font-size: 15px; /* Increase font size */
+  width: 200px; /* Set a fixed width for the buttons */
+  height: 35px; /* Set a fixed height for the buttons */
+  text-align: center;
+  font-weight:500;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 5px; /* Optional: add rounded corners */
+  background-color: #7299b4c5; /* Optional: change the background color */
+  color: rgb(4, 4, 69); /* Optional: change the text color */
+  cursor: pointer; /* Optional: change cursor to pointer on hover */
+ }
+ .editaddSize:hover{
+  background-color: rgba(104, 158, 240, 0.512); /* Optional: change background color on hover */
+ }
 
 .AddEmp{
   float: right;

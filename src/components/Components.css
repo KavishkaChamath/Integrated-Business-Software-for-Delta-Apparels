@@ -2,6 +2,7 @@
     position: relative; 
     background-color: #ffffffb7;
     height: 75px; 
+    width:100%;
   }
 .title{
     /* margin-right: 100%; */

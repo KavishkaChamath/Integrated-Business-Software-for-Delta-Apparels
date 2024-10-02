@@ -34,6 +34,9 @@ const EmployeeTable = () => {
       setFilteredEmployees(employees); // Show all employees if search term is empty
       setSelectedEmployee(null); // Clear the selected employee
       setShowEditButton(false); // Hide the button
+      alert('Please enter an Order Number or Customer Name to search.');
+      return;
+      
     } else {
       const filtered = employees.filter(emp =>
         emp.employeeNumber.includes(searchTerm) || emp.fullName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -98,7 +101,7 @@ const EmployeeTable = () => {
   };
 
   return (
-    <div>
+    <div className='empTable'>
  
       <div>
         <input
@@ -107,10 +110,11 @@ const EmployeeTable = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <button onClick={handleSearch}>Search</button>
+        
+        <button className="search" onClick={handleSearch}>Search</button>
       </div>
       {filteredEmployees.length > 0 ? (
-        <table border="1">
+        <table border="1" align='center'>
           <thead>
             <tr>
               <th>Employee Number</th>
@@ -153,9 +157,9 @@ const EmployeeTable = () => {
       {selectedEmployee && (
         <div>
           {showEditButton && (
-            <button onClick={handleEdit}>Edit Employee</button>
+            <button className="editEmp" onClick={handleEdit}>Edit Employee</button>
           )}
-          <button onClick={handleDelete}>Delete Selected Employee</button>  
+          <button className="deleteEmp" onClick={handleDelete}>Delete Selected Employee</button>  
         </div>
       )}
     </div>

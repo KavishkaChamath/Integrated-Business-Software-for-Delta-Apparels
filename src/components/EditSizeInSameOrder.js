@@ -5,7 +5,6 @@ import { database } from '../Firebase';
 
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
-import { Helmet } from 'react-helmet';
 
 const EditOrder = () => {
   const location = useLocation();
@@ -145,18 +144,16 @@ const EditOrder = () => {
   return (
     
     <div>
-      <Helmet>
-        <title>Edit Data</title>
-      </Helmet>
       <Titlepic/>
       <SignOut/>
       <div className='holder'>
 
-      <button onClick={handleChangeClick}>
+      <button className="editaddSize"onClick={handleChangeClick}>
         {isChangeClicked ? 'Change size only ' : 'Edit all data'}
       </button>
 
-      <div className='wrapper'>
+      <div className='ordholder'>
+      <div className='ordwrapper'>
         {/* Conditionally render the forms based on isChangeClicked */}
       {isChangeClicked ? (
         <div className="transparent-box">
@@ -364,6 +361,7 @@ const EditOrder = () => {
       </div>
     </div>
     
+    </div>
     </div>
     );
 };
