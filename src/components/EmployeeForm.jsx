@@ -5,7 +5,7 @@ import { ref, push } from 'firebase/database';
 import SignOut from './SignOut';
 import Titlepic from './Titlepic';
 import './Orderdetails.css'; 
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -296,7 +296,7 @@ export const EmployeeForm = () => {
       
       {showQRCode && (
         <div className='qr-code' ref={qrRef} style={{ display: 'none' }}>
-          <QRCode value={generateQRCodeValue()} size={256} level="H" /> 
+          <QRCodeCanvas value={generateQRCodeValue()} size={256} level="H" /> 
         </div>
       )}
          
