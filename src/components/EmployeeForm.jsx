@@ -5,7 +5,7 @@ import { ref, push,query,orderByChild,equalTo,get } from 'firebase/database';
 import SignOut from './SignOut';
 import Titlepic from './Titlepic';
 import './Orderdetails.css'; 
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 
@@ -348,7 +348,7 @@ const validateEmployeeNumber = (number) => {
       
       {showQRCode && (
         <div className='qr-code' ref={qrRef} style={{ display: 'none' }}>
-          <QRCode value={generateQRCodeValue()} size={256} level="H" /> 
+          <QRCodeCanvas value={generateQRCodeValue()} size={256} level="H" /> 
         </div>
       )}
          
