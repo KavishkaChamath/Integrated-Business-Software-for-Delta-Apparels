@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { ref, push, set } from 'firebase/database';
 import { database } from '../Firebase'; // Adjust the import path as necessary
-import { Helmet } from 'react-helmet';
-import Titlepic from './Titlepic';
-import SignOut from './SignOut';
 
 const AddNewUser = () => {
   const [username, setUsername] = useState('');
@@ -40,11 +37,6 @@ const AddNewUser = () => {
 
   return (
     <div>
-      <Titlepic/>
-      <SignOut/>
-      <Helmet>
-        <title>Add New User</title>
-      </Helmet>
       <h2>Add New User</h2>
       <form onSubmit={handleSubmit}>
         <div>

@@ -3,7 +3,6 @@ import { ref, onValue } from "firebase/database";
 import { database } from "../../Firebase"; // Adjust this to your Firebase config file
 import Titlepic from "../Titlepic";
 import SignOut from "../SignOut";
-import { Helmet } from 'react-helmet';
 
 const CheckPauseTime = () => {
   const [lines, setLines] = useState([
@@ -52,9 +51,6 @@ const CheckPauseTime = () => {
 
   return (
     <div>
-      <Helmet>
-        <title>Pause Time</title>
-      </Helmet>
         <Titlepic/>
         <SignOut/>
     <div className="pause-time-container">

@@ -104,7 +104,7 @@ const ShowOrder = () => {
                 <th>Colour</th>
                 <th>Size</th>
                 <th>SMV</th>
-                <th>Ithaly PO</th>
+                <th>Italy PO</th>
                 <th>Production PO</th>
                 <th>Order Quantity</th>
                 <th>PSD</th>
@@ -125,7 +125,7 @@ const ShowOrder = () => {
                   <td>{order.colour}</td>
                   <td>{order.size}</td>
                   <td>{order.smv}</td>
-                  <td>{order.ithalyPO}</td>
+                  <td>{order.italyPO}</td>
                   <td>{order.productionPO}</td>
                   <td>{order.orderQuantity}</td>
                   <td>{order.psd}</td>

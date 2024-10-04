@@ -2,7 +2,6 @@ import React from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import Titlepic from '../components/Titlepic';
 import './pages.css';
-import { Helmet } from 'react-helmet';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,9 +10,6 @@ export default function Login() {
   const handleClick2= () => navigate('/components/LoginForm');
   return (
     <div className='holder'>
-      <Helmet>
-        <title>Login</title>
-      </Helmet>
         <Titlepic/>
            <center>
            <div className="Ithome">

@@ -1,0 +1,63 @@
+.cutButtons button{
+    display: grid;
+    justify-items: center;
+    margin-top: 90px;
+    margin-left: 15%;
+    width: 70%;
+    height: 90px;
+  
+  padding: 20px;
+  font-size: 30px; /* Increase font size */
+  text-align: center;
+  font-weight: 900;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 5px; /* Optional: add rounded corners */
+  background-color: rgba(24, 109, 116, 0.795); /* Optional: change the background color */
+  color: white; /* Optional: change the text color */
+  cursor: pointer;
+}
+
+.cutButtons button:hover {
+    background-color: rgba(50, 184, 205, 0.795); /* Optional: change background color on hover */
+  }
+
+.searchBar{
+    margin-top: 10px;
+}
+
+.cutTable table{
+  width: 97%; 
+  background-color: #cbd0d49f;
+  border-color: blue;
+  text-align: center;
+}
+.bundleTable table{
+  width: 97%; 
+  background-color: #cbd0d49f;
+  border-color: blue;
+  text-align: center;
+}
+.inqueTbl table{
+  width: 97%; 
+  background-color: #cbd0d49f;
+  border-color: blue;
+  text-align: center;
+}
+
+.save-button {
+  margin-left: 1ch;
+  margin-top: 0.5ch;
+  font-size: 14px; /* Increase font size */
+  width: 150px; /* Set a fixed width for the buttons */
+  height: 35px; /* Set a fixed height for the buttons */
+  text-align: center;
+  font-weight:500;
+  border: none; /* Optional: remove the default button border */
+  border-radius: 5px; /* Optional: add rounded corners */
+  background-color: rgba(99, 147, 189, 0.795); /* Optional: change the background color */
+  color: rgb(4, 4, 69); /* Optional: change the text color */
+  cursor: pointer; /* Optional: change cursor to pointer on hover */
+}
+.save-button:hover{
+  background-color: rgba(50, 132, 205, 0.795); /* Optional: change background color on hover */
+}

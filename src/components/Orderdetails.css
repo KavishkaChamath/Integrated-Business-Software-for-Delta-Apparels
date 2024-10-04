@@ -201,6 +201,7 @@ button[type='submit']:hover {
   width: 97%; 
   background-color: #9dd7fe9f;
   border-color: blue;
+  text-align: center;
 }
 
 .deleteOrd{

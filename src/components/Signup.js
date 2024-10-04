@@ -46,7 +46,7 @@ export const Signup = () => {
   return (
     <div>
       <Helmet>
-        <title>Add User</title>
+        <title>Add New User</title>
       </Helmet>
       <Titlepic/>
       <SignOut/>

@@ -87,6 +87,7 @@ const fetchOrderDetails = async (orderNumber,italyPo,productionPo) => {
                productionpo: order.productionPO || 'N/A',
               color: order.colour || 'N/A',
               colorCode: order.colourCode || 'N/A',
+              Smv:order.smv || 'N/A'
             };
           }
         }
@@ -96,6 +97,7 @@ const fetchOrderDetails = async (orderNumber,italyPo,productionPo) => {
           styleNumber: 'N/A',
           color: 'N/A',
           colorCode: 'N/A',
+          Smv:'N/A'
         };
       } else {
         console.warn('No orders found in the database.');
@@ -103,6 +105,7 @@ const fetchOrderDetails = async (orderNumber,italyPo,productionPo) => {
           styleNumber: 'N/A',
           color: 'N/A',
           colorCode: 'N/A',
+          Smv:'N/A'
         };
       }
     } catch (error) {
@@ -111,6 +114,7 @@ const fetchOrderDetails = async (orderNumber,italyPo,productionPo) => {
         styleNumber: 'N/A',
         color: 'N/A',
         colorCode: 'N/A',
+        Smv:'N/A'
       };
     }
   };
@@ -121,7 +125,7 @@ const fetchOrderDetails = async (orderNumber,italyPo,productionPo) => {
     return Object.keys(linesData).map((lineKey) => {
       const bundles = linesData[lineKey];
       return (
-        <div key={lineKey}>
+        <div key={lineKey} className='inqueTbl'>
           <h2>{lineKey}</h2>
           <table border="1">
             <thead>
@@ -135,6 +139,7 @@ const fetchOrderDetails = async (orderNumber,italyPo,productionPo) => {
                 <th>Production PO</th>
                 <th>Color</th>
                 <th>Color Code</th>
+                <th>SMV</th>
               </tr>
             </thead>
             <tbody>
@@ -149,20 +154,24 @@ const fetchOrderDetails = async (orderNumber,italyPo,productionPo) => {
                   <td>{bundleDetails.productionpo}</td>
                   <td>{bundleDetails.color}</td>
                   <td>{bundleDetails.colorCode}</td>
+                  <td>{bundleDetails.Smv}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <div className="footer">
+        <p>&copy; 2024 Delta Apparels</p>
+      </div>
         </div>
       );
     });
   };
 
   return (
-    <div>
-      <Helmet>
-        <title>Inqueue </title>
-      </Helmet>
+    <div className='holder'> 
+    <Helmet>
+      <title>Inqueue</title>
+    </Helmet>
       <Titlepic />
       <SignOut />
       <h1>Inqueue Bundles Data</h1>

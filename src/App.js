@@ -1,9 +1,8 @@
 
-import { HashRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import {AdminLog} from './components/AdminLog';
 import Login from './pages/Login';
-import AdminHome from './pages/AdminHome';
 import {LoginForm} from './components/LoginForm';
 import { ITSecLog } from './components/ITSecLog';
 import LineHome from './pages/LineHome';
@@ -17,8 +16,8 @@ import EditEmployeeData from './components/EditEmployeeData';
 import EditOrder from './components/EditOrder';
 import EditSizeInSameOrder from './components/EditSizeInSameOrder';
 import Signup from './components/Signup';
-import SelectLine from './components/Line/SelectLine';
-import AssignEmployee from './components/Line/AssignEmployee';
+
+
 import CuttingDetailsForm from './components/Cutting';
 import Bundle from './components/Bundle';
 import Cutting from './components/Cutting';
@@ -37,10 +36,9 @@ function App() {
        <Route path="/components/LoginForm" element={<LoginForm />} />
        <Route path="/pages/Login" element={<Login />} />
        <Route path="/pages/Home" element={<Home />} />
-       <Route path="/pages/AdminHome" element={<AdminHome />} />
        <Route path="/pages/ItHome" element={<ItHome />} />
        <Route path="/pages/LineHome" element={<LineHome />} />
-       <Route path="/pages/SelectLine" element={<SelectLine />} />
+       
        <Route path="/pages/Admin" element={<Admin />} />
        <Route path="/pages/EmployeeHome" element={<EmployeeHome />} />
        <Route path="/pages/OrderHome" element={<OrderHome />} />
@@ -51,17 +49,16 @@ function App() {
        <Route path="/editOrder" element={<EditOrder />} />
        <Route path="/addSizeInSameOrder" element={<EditSizeInSameOrder />} />
        <Route path="/components/AddNewUser" element={<Signup />} />
-       <Route path="/line/selectLine" element={<SelectLine />} />
-       <Route path="/line/AssignEmp" element={<AssignEmployee />} />
+
+
        <Route path="/comp/cutting" element={<CuttingDetailsForm />} />
        <Route path="/comp/bundle" element={<Bundle/>} />
        <Route path="/comp/cutting" element={<Cutting/>} />
        <Route path="/comp/inqueue" element={<InqueueTable/>} />
-       <Route path="/comp/admin/pauseTime" element={<CheckPauseTime/>} /> 
+       <Route path="/comp/admin/pauseTime" element={<CheckPauseTime/>} />
        <Route path="/" element={<Home />} />
       </Routes>
     </Router>
-    
     {/* <AdminLog/> */}
     
     </div>

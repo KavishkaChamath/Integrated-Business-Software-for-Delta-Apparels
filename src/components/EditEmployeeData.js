@@ -5,6 +5,7 @@ import { database } from '../Firebase';
 
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
+import { Helmet } from 'react-helmet';
 
 const EditEmployeeData = () => {
   const location = useLocation();
@@ -111,6 +112,9 @@ const EditEmployeeData = () => {
   return (
     
     <div>
+      <Helmet>
+        <title>Edit Employee</title>
+      </Helmet>
       <Titlepic/>
       <SignOut/>
       {/* Header with photo and gradient background */}

@@ -16,27 +16,18 @@
     height: 80vh;
   } */
 
-  .holder{
-    background: url('../components/Images/img30.jpg') no-repeat center 30% fixed;
-    background-size: 100vw 100vh; /* cover the entire viewport */
-    background-size: cover; /* add this to ensure the image is stretched to fit the full height */
-    width: auto; /* set width to 100% of viewport width */
-    height: 85vh; /* set height to 100% of viewport height */
-    flex-shrink: 0;
-    margin: 0; /* remove any margin */
-    padding: 0; /* remove any padding */
-    overflow: hidden; /* add this to prevent the page from becoming scrollable */
-    background-attachment: fixed;
-    background-size: cover;
-    width: 100vw;
-    height: 100vh;
+  .holder {
+    background: url('../components/Images/img30.jpg') no-repeat center center fixed;
+    background-size: cover; /* Ensures the image always covers the entire viewport */
+    width: 100vw; /* Full viewport width */
+    min-height: 100vh; /* Ensure the height is at least 100% of the viewport height */
     margin: 0;
     padding: 0;
-    overflow: hidden;
-    /* Add a whitish overlay */
-    background-color: rgba(177, 248, 253, 0.311);
-    background-blend-mode: lighten;
-  }
+    overflow: hidden; /* Prevents scrolling */
+    background-color: rgba(177, 248, 253, 0.311); /* Whitish overlay */
+    background-blend-mode: lighten; /* Lightens the image with the overlay */
+}
+
   .container {
     display: flex;
     justify-content: center;

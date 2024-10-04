@@ -1,12 +1,13 @@
 import React, {useState,useRef} from 'react';
 import './EmployeeForm.css'; 
 import { database } from '../Firebase';
-import { ref, push } from 'firebase/database';
+import { ref, push,query,orderByChild,equalTo,get } from 'firebase/database';
 import SignOut from './SignOut';
 import Titlepic from './Titlepic';
 import './Orderdetails.css'; 
-import { QRCodeCanvas } from 'qrcode.react';
+import QRCode from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 
 
 export const EmployeeForm = () => {
@@ -30,42 +31,62 @@ export const EmployeeForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // handlePhoneNumberChange();
+  
     const employeeRef = ref(database, 'employees');
-    const newEmployee = {
-      employeeNumber,
-      fullName,
-      callingName,
-      homeAddress,
-      contactNumber1,
-      contactNumber2,
-      dateJoined,
-      gender,
-      designation,
-      workType,
-      lineAllocation
-    };
-    push(employeeRef, newEmployee)
-    .then(() => {
-      console.log('Data added successfully');
-      // Optionally, reset the form
-      setEmployeeNumber('');
-      setFullName('');
-      setCallingName('');
-      setHomeAddress('');
-      setContactNumber1('');
-      setContactNumber2('');
-      setDateJoined('');
-      setGender('');
-      setDesignation('');
-      workType('');
-      setLineAllocation('');
-    })
-    .catch((error) => {
-      console.error('Error adding data: ', error);
-    });
-    navigate('/pages/EmployeeHome');
+    
+    // Query to check if an employee with the same employeeNumber exists
+    const employeeQuery = query(employeeRef, orderByChild('employeeNumber'), equalTo(employeeNumber));
+  
+    get(employeeQuery)
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          // If the employee number already exists, alert the user
+          alert('Employee number already exists. Please use a different employee number.');
+        } else {
+          // If the employee number doesn't exist, proceed to add the new employee
+          const newEmployee = {
+            employeeNumber,
+            fullName,
+            callingName,
+            homeAddress,
+            contactNumber1,
+            contactNumber2,
+            dateJoined,
+            gender,
+            designation,
+            workType,
+            lineAllocation
+          };
+  
+          push(employeeRef, newEmployee)
+            .then(() => {
+              console.log('Data added successfully');
+              // Optionally, reset the form
+              setEmployeeNumber('');
+              setFullName('');
+              setCallingName('');
+              setHomeAddress('');
+              setContactNumber1('');
+              setContactNumber2('');
+              setDateJoined('');
+              setGender('');
+              setDesignation('');
+              setWorkType('');
+              setLineAllocation('');
+              // Navigate to the EmployeeHome page after adding the data
+              navigate('/pages/EmployeeHome', { replace: true });
+            })
+            .catch((error) => {
+              console.error('Error adding data: ', error);
+            });
+        }
+      })
+      .catch((error) => {
+        console.error('Error checking employee data: ', error);
+        alert('Error checking employee data. Please try again.');
+      });
   };
+  
 
   const handleCheckboxChange = (type) => {
     if (type === 'Direct') {
@@ -104,6 +125,31 @@ export const EmployeeForm = () => {
       alert('Invalid Number');
     }
   };
+
+  const validateDateJoined = (date) => {
+    const today = new Date().toISOString().split("T")[0]; // Get today's date in yyyy-mm-dd format
+    const minDate = "2000-01-01"; // Define the minimum allowed date
+  
+    // Check if the date is in the future
+    if (date > today) {
+      alert("Date of Joined cannot be a future date.");
+      setDateJoined(''); // Optionally reset the date field
+    }
+    // Check if the date is before 2000-01-01
+    else if (date < minDate) {
+      alert("Date of Joined cannot be before 2000-01-01.");
+      setDateJoined(''); // Optionally reset the date field
+    }
+  };
+  
+  // Validation function
+const validateEmployeeNumber = (number) => {
+  const regex = /^[0-9]+$/; // Only allows numeric values
+  if (!regex.test(number)) {
+    alert("Employee Number should contain only numbers.");
+    setEmployeeNumber("");
+  }
+};
 
   // const handleGenerateQRCode = () => {
   //   setShowQRCode(true);
@@ -148,6 +194,9 @@ export const EmployeeForm = () => {
 
   return (
     <div>
+      <Helmet>
+        <title>Add EMployee</title>
+      </Helmet>
       <Titlepic/>
       <SignOut/>
       {/* Header with photo and gradient background */}
@@ -159,7 +208,9 @@ export const EmployeeForm = () => {
           <div className='form-group2'>
             <label>Employee Number</label>
             <input type='text' placeholder='Employee Number' value={employeeNumber}
-                onChange={(e) => setEmployeeNumber(e.target.value)} required />
+                onChange={(e) => setEmployeeNumber(e.target.value)} 
+                onBlur={() => validateEmployeeNumber(employeeNumber)}
+                required />
           </div>
           <div className='form-group2'>
             <label>Employee Full Name</label>
@@ -203,7 +254,8 @@ export const EmployeeForm = () => {
               onChange={(e) => {
                 setDateJoined(e.target.value);
                 handleDateInput(e);
-              }} 
+              }}
+              onBlur={() => validateDateJoined(dateJoined)} 
               required 
               max="9999-12-31"
             />
@@ -276,12 +328,12 @@ export const EmployeeForm = () => {
                 <option value='Line 4'>Line 4</option>
                 <option value='Line 5'>Line 5</option>
                 <option value='Line 6'>Line 6</option>
-                <option value='Line 1'>Line 1</option>
-                <option value='Line 2'>Line 2</option>
-                <option value='Line 3'>Line 3</option>
-                <option value='Line 4'>Line 4</option>
-                <option value='Line 5'>Line 5</option>
-                <option value='Line 6'>Line 6</option>
+                <option value='Line 7'>Line 1</option>
+                <option value='Line 8'>Line 2</option>
+                <option value='Line 9'>Line 3</option>
+                <option value='Line 10'>Line 4</option>
+                <option value='Line 11'>Line 5</option>
+                <option value='Line 12'>Line 6</option>
               {/* Add options as needed */}
             </select>
           </div>
@@ -296,7 +348,7 @@ export const EmployeeForm = () => {
       
       {showQRCode && (
         <div className='qr-code' ref={qrRef} style={{ display: 'none' }}>
-          <QRCodeCanvas value={generateQRCodeValue()} size={256} level="H" /> 
+          <QRCode value={generateQRCodeValue()} size={256} level="H" /> 
         </div>
       )}
          

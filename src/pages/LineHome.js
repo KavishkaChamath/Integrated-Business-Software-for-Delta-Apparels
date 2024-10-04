@@ -10,6 +10,7 @@ import RejectionModal from '../components/Line/PasswordModel';
 import {  query, orderByChild, equalTo, update, runTransaction } from 'firebase/database';
 import { Helmet } from 'react-helmet';
 
+
 export default function LineHome() {
 
   // const[productionPO,serProductioPo]=useState('');
@@ -72,6 +73,7 @@ const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
     retrievemembersData(selectedLine);
     retrieveTotalFirstQuality(selectedLine);
     retrieveEffiency(selectedLine);
+    retrieveIncentive(selectedLine);
   }, [selectedLine]);
 
   const getCurrentDate = () => {
@@ -1024,6 +1026,7 @@ const firstTotalRunTime = async(selectedLine)=>{
                         pauseTime: "",
                         Smv: "",
                         CurrentEffiency: "",
+                        Incentive:"",
                       })
                         .then(() => {
                           console.log('Host members count set to 1.');
@@ -1054,6 +1057,7 @@ const firstTotalRunTime = async(selectedLine)=>{
                         pauseTime: "",
                         Smv: "",
                         CurrentEffiency:"",
+                        Incentive:"",
                        })
                         .then(() => {
                           console.log('Guest members count set to 1.');
@@ -1158,6 +1162,33 @@ const firstTotalRunTime = async(selectedLine)=>{
       } else {
         console.log("No data available");
         setEffiency(0);
+      }
+    }, (error) => {
+      console.error("Error fetching data:", error);
+    });
+
+    // Return the unsubscribe function to clean up the listener
+    return unsubscribe;
+  };
+
+  const retrieveIncentive = (line) => {
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    if (!line) {
+      console.error("Line cannot be undefined");
+      return;
+    }
+
+    const dbPath = `dailyUpdates/${currentDate}/${line}/Incentive`;
+    const dataRef = ref(database, dbPath);
+
+    // Set up a real-time listener for the data
+    const unsubscribe = onValue(dataRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setIncentive(snapshot.val());
+      } else {
+        console.log("No data available");
+        setIncentive(0);
       }
     }, (error) => {
       console.error("Error fetching data:", error);
@@ -1548,8 +1579,7 @@ const handleUpdateRejection = () => {
 
 const hasExecutedRunTimeUpdate= useRef(false);
 const hasExecutedPauseTimeUpdate = useRef(false);
-const hasExecutedRunTimeUpdateForLunch= useRef(false);
-const hasExecutedPauseTimeUpdateForLunch = useRef(false);
+
 
 
 useEffect(() => {
@@ -1602,7 +1632,7 @@ useEffect(() => {
             let isLunchTime = false;
             if (selectedLine === 'Line 1' || selectedLine === 'Line 2' || selectedLine === 'Line 3' ) {
               // Break time for lines 1 to 3: 14:45 - 15:00
-              isLunchTime = (currentTime.getHours() === 15 && currentTime.getMinutes() >= 42 && currentTime.getMinutes() < 43);
+              isLunchTime = (currentTime.getHours() === 9 && currentTime.getMinutes() >= 42 && currentTime.getMinutes() < 43);
             } else if (selectedLine === 'Line 4' || selectedLine === 'Line 4'||selectedLine === 'Line 6') {
               // Break time for lines 4 to 6: 15:00 - 15:30
               isLunchTime = (currentTime.getHours() === 15 && currentTime.getMinutes() >= 0 && currentTime.getMinutes() < 30);
@@ -1660,22 +1690,22 @@ useEffect(() => {
             //   }
             // }
              // Modal management for lunch time
-             if (isLunchTime && !isBreakTimeModalOpen) {
-              setIsBreakTimeModalOpen(true);
-              hasExecutedPauseTimeUpdateForLunch.current = false;
-              if (!hasExecutedRunTimeUpdateForLunch.current) {
-                console.log("menna wedak")
-                getCurrentRunTime(selectedLine);
-                hasExecutedRunTimeUpdateForLunch.current = true;
-              }
-            } else if (!isLunchTime && isBreakTimeModalOpen) {
-              setIsBreakTimeModalOpen(false);
-              hasExecutedRunTimeUpdateForLunch.current = false;
-              if (!hasExecutedPauseTimeUpdateForLunch.current) {
-                updatePauseTime(selectedLine);
-                hasExecutedPauseTimeUpdateForLunch.current = true;
-              }
-            }
+            //  if (isLunchTime && !isBreakTimeModalOpen) {
+            //   setIsBreakTimeModalOpen(true);
+            //   hasExecutedPauseTimeUpdateForLunch.current = false;
+            //   if (!hasExecutedRunTimeUpdateForLunch.current) {
+            //     console.log("menna wedak")
+            //     getCurrentRunTime(selectedLine);
+            //     hasExecutedRunTimeUpdateForLunch.current = true;
+            //   }
+            // } else if (!isLunchTime && isBreakTimeModalOpen) {
+            //   setIsBreakTimeModalOpen(false);
+            //   hasExecutedRunTimeUpdateForLunch.current = false;
+            //   if (!hasExecutedPauseTimeUpdateForLunch.current) {
+            //     updatePauseTime(selectedLine);
+            //     hasExecutedPauseTimeUpdateForLunch.current = true;
+            //   }
+            // }
             // Only update runtime if it's not break time
             if (!isBreakTime) {
               const elapsedTimeInSeconds = Math.floor((Date.now() - startTime) / 1000); // seconds
@@ -1698,7 +1728,88 @@ useEffect(() => {
   });
 }, [isBreakTimeModalOpen, selectedLine]); // Add all dependencies here
 
+// const hasExecutedRunTimeUpdateForLunch = useRef(false);
+// const hasExecutedPauseTimeUpdateForLunch = useRef(false);
 
+// useEffect(() => {
+//   if (!selectedLine) {
+//     console.error("Selected line is undefined or null");
+//     return;
+//   }
+
+//   const timeRef = ref(database, 'serverTime'); // Dummy reference to get server time
+//   const currentDate = new Date().toISOString().split('T')[0];
+  
+//   const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+
+//   // Save server timestamp temporarily to calculate server time
+//   set(timeRef, {
+//     timestamp: serverTimestamp(),
+//   })
+//     .then(() => {
+//       onValue(timeRef, (snapshot) => {
+//         const serverTime = snapshot.val()?.timestamp;
+//         if (serverTime) {
+//           const now = new Date(serverTime);
+
+//           const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 30, 0);
+//           const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 30, 0);
+
+//           if (now >= start && now <= end) {
+//             // If there's no startTime, set it to the start time
+//             if (!startTime) {
+//               setStartTime(start.getTime());
+//               localStorage.setItem('startTime', start.getTime());
+//             }
+
+//             // Start the timer
+//             const intervalId = setInterval(() => {
+//               const currentTime = new Date();
+
+//               const isLunchTimeGroup1 = currentTime.getHours() === 10 && currentTime.getMinutes() >= 19 && currentTime.getMinutes() < 20;
+//               const isLunchTimeGroup2 = currentTime.getHours() === 10 && currentTime.getMinutes() >= 5 && currentTime.getMinutes() < 6;
+
+//               // Handle lunch for Lines 1, 2, 3
+//               if (['Line 1', 'Line 2', 'Line 3'].includes(selectedLine)) {
+//                 if (isLunchTimeGroup1 && !hasExecutedRunTimeUpdateForLunch.current) {
+//                   setIsBreakTimeModalOpen(true);
+//                   getCurrentRunTime(selectedLine);  // Execute runtime calculation
+//                   hasExecutedRunTimeUpdateForLunch.current = true;
+//                   hasExecutedPauseTimeUpdateForLunch.current = false; // Reset pause flag
+//                 } else if (!isLunchTimeGroup1 && !hasExecutedPauseTimeUpdateForLunch.current && hasExecutedRunTimeUpdateForLunch.current) {
+//                   setIsBreakTimeModalOpen(false);
+//                   updatePauseTime(selectedLine);  // Execute pause time calculation
+//                   hasExecutedPauseTimeUpdateForLunch.current = true;
+//                   hasExecutedRunTimeUpdateForLunch.current = false;  // Reset runtime flag
+//                 }
+//               }
+
+//               // Handle lunch for Lines 4, 5, 6
+//               if (['Line 4', 'Line 5', 'Line 6'].includes(selectedLine)) {
+//                 if (isLunchTimeGroup2 && !hasExecutedRunTimeUpdateForLunch.current) {
+//                   setIsBreakTimeModalOpen(true);
+//                   getCurrentRunTime(selectedLine);  // Execute runtime calculation
+//                   hasExecutedRunTimeUpdateForLunch.current = true;
+//                   hasExecutedPauseTimeUpdateForLunch.current = false; // Reset pause flag
+//                 } else if (!isLunchTimeGroup2 && !hasExecutedPauseTimeUpdateForLunch.current && hasExecutedRunTimeUpdateForLunch.current) {
+//                   setIsBreakTimeModalOpen(false);
+//                   updatePauseTime(selectedLine);  // Execute pause time calculation
+//                   hasExecutedPauseTimeUpdateForLunch.current = true;
+//                   hasExecutedRunTimeUpdateForLunch.current = false;  // Reset runtime flag
+//                 }
+//               }
+//             }, 1000);  // Run this every second
+
+//             // Clear interval when the component unmounts
+//             return () => clearInterval(intervalId);
+//           }
+//         }
+//       });
+//     })
+//     .catch((error) => {
+//       console.error("Error setting server time:", error);
+//     });
+// }, [selectedLine,isBreakTimeModalOpen]); // Removed `isBreakTimeModalOpen` from dependencies
 
 const updateBreakStartTime = async (selectedLine) => {
   const currentDate = new Date().toISOString().split('T')[0]; // Get the current date in YYYY-MM-DD format
@@ -1750,7 +1861,6 @@ const [effiency, setEffiency] = useState("0");
 const calculateTotalWorkTime = async (selectedLine) => {
 
   const currentDate = new Date().toISOString().split('T')[0];
-
   const previousSelectedIncompleteBundle = selectedIncompleteBundle;
   setSelectedIncompleteBundle("");
   
@@ -1854,6 +1964,7 @@ const calculateTotalWorkTime = async (selectedLine) => {
       await update(currentEffiRef, {
         CurrentEffiency: effiency,
       });
+      calculateIncentive(selectedLine,effiency);
       setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
 
       return { totalWorkTimeinMinitues, effiency, totalQuality };
@@ -1884,12 +1995,98 @@ const handleCalculateAndSaveEffiency = async (selectedLine) => {
   await saveEffiency(selectedLine, totalWorkTimeinMinitues, effiency, totalQuality);
 };
 
-const calculateInsentive= async (selectedLine,effiency) => {
-  let insentive = 0;
-  if(effiency>60){
-    insentive=50;
+const [incentive, setIncentive] = useState("");
+
+const calculateIncentive = async (selectedLine, efficiency) => {
+
+  const currentDate = new Date().toISOString().split('T')[0];
+  const incentiveRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+  
+  const previousSelectedIncompleteBundle = selectedIncompleteBundle;
+  setSelectedIncompleteBundle("");
+
+  let incentive = 0;
+
+  // Define the efficiency and corresponding incentive values from the table
+  const incentiveTable = [
+    { minEfficiency: 60, maxEfficiency: 61, amount: 70 },
+    { minEfficiency: 61, maxEfficiency: 62, amount: 73 },
+    { minEfficiency: 62, maxEfficiency: 63, amount: 77 },
+    { minEfficiency: 63, maxEfficiency: 64, amount: 80 },
+    { minEfficiency: 64, maxEfficiency: 65, amount: 83 },
+    { minEfficiency: 65, maxEfficiency: 66, amount: 91 },
+    { minEfficiency: 66, maxEfficiency: 67, amount: 94 },
+    { minEfficiency: 67, maxEfficiency: 68, amount: 97 },
+    { minEfficiency: 68, maxEfficiency: 69, amount: 101 },
+    { minEfficiency: 69, maxEfficiency: 70, amount: 104 },
+    { minEfficiency: 70, maxEfficiency: 71, amount: 111 },
+    { minEfficiency: 71, maxEfficiency: 72, amount: 114 },
+    { minEfficiency: 72, maxEfficiency: 73, amount: 118 },
+    { minEfficiency: 73, maxEfficiency: 74, amount: 121 },
+    { minEfficiency: 74, maxEfficiency: 75, amount: 125 },
+    { minEfficiency: 75, maxEfficiency: 76, amount: 164 },
+    { minEfficiency: 76, maxEfficiency: 77, amount: 174 },
+    { minEfficiency: 77, maxEfficiency: 78, amount: 184 },
+    { minEfficiency: 78, maxEfficiency: 79, amount: 193 },
+    { minEfficiency: 79, maxEfficiency: 80, amount: 203 },
+    { minEfficiency: 80, maxEfficiency: 81, amount: 224 },
+    { minEfficiency: 81, maxEfficiency: 82, amount: 234 },
+    { minEfficiency: 82, maxEfficiency: 83, amount: 245 },
+    { minEfficiency: 83, maxEfficiency: 84, amount: 255 },
+    { minEfficiency: 84, maxEfficiency: 85, amount: 265 },
+    { minEfficiency: 85, maxEfficiency: 86, amount: 289 },
+    { minEfficiency: 86, maxEfficiency: 87, amount: 300 },
+    { minEfficiency: 87, maxEfficiency: 88, amount: 311 },
+    { minEfficiency: 88, maxEfficiency: 89, amount: 321 },
+    { minEfficiency: 89, maxEfficiency: 90, amount: 332 },
+    { minEfficiency: 90, maxEfficiency: 91, amount: 359 },
+    { minEfficiency: 91, maxEfficiency: 92, amount: 371 },
+    { minEfficiency: 92, maxEfficiency: 93, amount: 382 },
+    { minEfficiency: 93, maxEfficiency: 94, amount: 393 },
+    { minEfficiency: 94, maxEfficiency: 95, amount: 404 },
+    { minEfficiency: 95, maxEfficiency: 96, amount: 415 },
+    { minEfficiency: 96, maxEfficiency: 97, amount: 427 },
+    { minEfficiency: 97, maxEfficiency: 98, amount: 438 },
+    { minEfficiency: 98, maxEfficiency: 99, amount: 449 },
+    { minEfficiency: 99, maxEfficiency: 100, amount: 460 },
+    { minEfficiency: 100, maxEfficiency: 101, amount: 472 },
+    { minEfficiency: 101, maxEfficiency: 102, amount: 483 },
+    { minEfficiency: 102, maxEfficiency: 103, amount: 496 },
+    { minEfficiency: 103, maxEfficiency: 104, amount: 509 },
+    { minEfficiency: 104, maxEfficiency: 105, amount: 521 },
+    { minEfficiency: 105, maxEfficiency: 106, amount: 534 },
+    { minEfficiency: 106, maxEfficiency: 107, amount: 546 },
+    { minEfficiency: 107, maxEfficiency: 108, amount: 559 },
+    { minEfficiency: 108, maxEfficiency: 109, amount: 571 },
+    { minEfficiency: 109, maxEfficiency: 110, amount: 584 },
+    { minEfficiency: 110, maxEfficiency: 111, amount: 597 },
+  ];
+
+  // Check if the efficiency is above 111
+  if (efficiency >= 111) {
+    incentive = 597; // Set to the max value for efficiencies >= 111
+    setIncentive(incentive);
+  } else {
+    // Find the incentive based on the efficiency range
+    const entry = incentiveTable.find(
+      item => efficiency >= item.minEfficiency && efficiency < item.maxEfficiency
+    );
+
+    if (entry) {
+      incentive = entry.amount;
+      setIncentive(incentive);
+    } else {
+      console.log('Efficiency out of range');
+      setIncentive("");
+    }
   }
-}
+  await update(incentiveRef, {
+    Incentive: incentive,
+  });
+  setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+  return incentive;
+};
+
 
 //const [startTime, setStartTime] = useState(null);
  const [runTime, setRunTime] = useState({ hours: 0, minutes: 0 });
@@ -1919,54 +2116,54 @@ useEffect(() => {
   return () => clearInterval(intervalId);
 }, []);
 
-const [runtime, setRuntime] = useState('');
-useEffect(() => {
+// const [runtime, setRuntime] = useState('');
+// useEffect(() => {
   
-  // Function to calculate runtime based on server time
-  const calculateRuntime = async () => {
-      const serverTimeSnap = await get(ref(database, '/serverTime'));
-      let serverTime = serverTimeSnap.val();
+//   // Function to calculate runtime based on server time
+//   const calculateRuntime = async () => {
+//       const serverTimeSnap = await get(ref(database, '/serverTime'));
+//       let serverTime = serverTimeSnap.val();
 
-      if (!serverTime) {
-          // Set the server timestamp in Firebase if not already set
-          set(ref(database, '/serverTime'), serverTimestamp());
-          serverTime = new Date();
-      } else {
-          serverTime = new Date(serverTime);
-      }
+//       if (!serverTime) {
+//           // Set the server timestamp in Firebase if not already set
+//           set(ref(database, '/serverTime'), serverTimestamp());
+//           serverTime = new Date();
+//       } else {
+//           serverTime = new Date(serverTime);
+//       }
 
-      const startTime = new Date(serverTime);
-      startTime.setHours(7, 30, 0); // Set to 7:30 AM
+//       const startTime = new Date(serverTime);
+//       startTime.setHours(7, 30, 0); // Set to 7:30 AM
 
-      const endTime = new Date(serverTime);
-      endTime.setHours(17, 30, 0); // Set to 5:30 PM
+//       const endTime = new Date(serverTime);
+//       endTime.setHours(17, 30, 0); // Set to 5:30 PM
 
-      // Reset time to start the next day
-      const resetTime = new Date(serverTime);
-      resetTime.setHours(0, 0, 0, 0);
+//       // Reset time to start the next day
+//       const resetTime = new Date(serverTime);
+//       resetTime.setHours(0, 0, 0, 0);
 
-      if (serverTime >= startTime && serverTime <= endTime) {
-          const elapsedTime = (serverTime - startTime) / 1000 / 60; // time in minutes
-          const hours = Math.floor(elapsedTime / 60);
-          const minutes = Math.floor(elapsedTime % 60);
-          setRuntime(`${hours} hours ${minutes} minutes`);
-      } else if (serverTime < startTime) {
-          setRuntime(`0 hours 0 minutes`);
-      } else if (serverTime > endTime && serverTime < resetTime) {
-          const totalMinutes = 10 * 60; // Total minutes from 7:30 AM to 5:30 PM
-          setRuntime(`${Math.floor(totalMinutes / 60)} hours ${totalMinutes % 60} minutes`);
-      }// If the current time is after 5:30 PM, runtime should be 10 hours (the full workday)
-      else if (serverTime > endTime) {
-        setRuntime(`10 hours 0 minutes`);
-      }else if (serverTime >= resetTime) {
-          set(ref(database, '/runtime'), null); // Clear runtime at midnight
-      }
-  };
+//       if (serverTime >= startTime && serverTime <= endTime) {
+//           const elapsedTime = (serverTime - startTime) / 1000 / 60; // time in minutes
+//           const hours = Math.floor(elapsedTime / 60);
+//           const minutes = Math.floor(elapsedTime % 60);
+//           setRuntime(`${hours} hours ${minutes} minutes`);
+//       } else if (serverTime < startTime) {
+//           setRuntime(`0 hours 0 minutes`);
+//       } else if (serverTime > endTime && serverTime < resetTime) {
+//           const totalMinutes = 10 * 60; // Total minutes from 7:30 AM to 5:30 PM
+//           setRuntime(`${Math.floor(totalMinutes / 60)} hours ${totalMinutes % 60} minutes`);
+//       }// If the current time is after 5:30 PM, runtime should be 10 hours (the full workday)
+//       else if (serverTime > endTime) {
+//         setRuntime(`10 hours 0 minutes`);
+//       }else if (serverTime >= resetTime) {
+//           set(ref(database, '/runtime'), null); // Clear runtime at midnight
+//       }
+//   };
 
-  const interval = setInterval(calculateRuntime, 1000); // Update runtime every second
+//   const interval = setInterval(calculateRuntime, 1000); // Update runtime every second
 
-  return () => clearInterval(interval); // Cleanup interval on component unmount
-}, []);
+//   return () => clearInterval(interval); // Cleanup interval on component unmount
+// }, []);
 
 
 const [bundles, setBundles] = useState([]);
@@ -2578,11 +2775,15 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
     </div>
     
     <div>
-      {effiency !== null && !isNaN(effiency) ? (
-        <p>Today Efficiency: {parseFloat(effiency).toFixed(2)} %</p>
-      ) : (
-        <p>No data yet.</p>
-      )}
+    {effiency !== null && effiency !== undefined && !isNaN(parseFloat(effiency)) ? (
+      <p>Today Efficiency: {parseFloat(effiency).toFixed(2)} %</p>
+    ) : (
+      <p>No data yet.</p>
+    )}
+  </div>
+
+    <div>
+        <p>Incentive: {incentive !== "" ? `Rs ${incentive} /=` : "No incentive calculated"}</p>
     </div>
 
     </div>

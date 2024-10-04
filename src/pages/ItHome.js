@@ -3,7 +3,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom';
 import SignOut from "../components/SignOut";
 import './pages.css'
-import { Helmet } from 'react-helmet';
+import { Helmet } from "react-helmet";
 
 export default function ItHome(){
 
@@ -13,10 +13,10 @@ export default function ItHome(){
     const handleClick2 = () => navigate('/pages/CutHome');
     return(
         <div className="holder">
-            <Helmet>
-                <title>IT Home</title>
-            </Helmet>
         <div>
+            <Helmet>
+                <Titlepic>It Home</Titlepic>
+            </Helmet>
             <Titlepic/>
             <SignOut/>
             <div className="Ithome2">

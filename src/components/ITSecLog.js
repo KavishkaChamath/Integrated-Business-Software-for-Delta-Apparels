@@ -74,14 +74,31 @@ export const ITSecLog = () => {
       alert('Please enter your email address to reset your password.');
       return;
     }
-
-    sendPasswordResetEmail(auth, email)
-      .then(() => {
-        alert('Password reset email sent. Please check your inbox.');
+  
+    // Query the database to check if the email exists
+    const userRef = ref(database, 'users');
+    const userQuery = query(userRef, orderByChild('username'), equalTo(email));
+  
+    get(userQuery)
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          // User exists, proceed with password reset
+          sendPasswordResetEmail(auth, email)
+            .then(() => {
+              alert('Password reset email sent. Please check your inbox.');
+            })
+            .catch((error) => {
+              console.error('Error sending password reset email:', error);
+              alert('Error sending password reset email. Please try again.');
+            });
+        } else {
+          // No user data found for this email
+          alert('Invalid username. Please enter a valid email address.');
+        }
       })
       .catch((error) => {
-        console.error('Error sending password reset email:', error);
-        alert('Error sending password reset email. Please try again.');
+        console.error('Error fetching user data:', error);
+        alert('Error checking username. Please try again.');
       });
   };
 
@@ -92,10 +109,10 @@ export const ITSecLog = () => {
 
   return (
     <div>
-      <Helmet>
-        <title>IT Login</title>
-      </Helmet>
-  
+      {/* Header with photo and gradient background */}
+    <Helmet>
+      <title>It Login</title>
+    </Helmet>
 
       {/* Login Form */}
       <div className='wrapper2'>

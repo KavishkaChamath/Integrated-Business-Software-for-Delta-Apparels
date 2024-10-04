@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ref, get, remove, set } from 'firebase/database';
+import { ref, get, remove, set, query, orderByChild,equalTo } from 'firebase/database';
 import { database } from '../Firebase'; // Ensure correct Firebase configuration import
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
-import { Helmet } from 'react-helmet';
 
 const Bundle = () => {
   const [orderNumber, setOrderNumber] = useState('');
@@ -90,7 +89,60 @@ const Bundle = () => {
 
 
   
-  const transferToLine = (bundleId, line, bundleData) => {
+  // const transferToLine = (bundleId, line, bundleData) => {
+  //   if (!bundleId || !line) {
+  //     alert('Please provide both Bundle ID and Line.');
+  //     return;
+  //   }
+  
+  //   // Find the new bundleId in the temp changes
+  //   const newBundleId = tempBundleIdChanges[bundleId] || bundleId;
+
+  //   // Check if the user entered a new bundleId
+  //   if (!newBundleId || newBundleId === bundleId) {
+  //     alert('Please enter a Bundle ID.');
+  //     return; // Exit the function if no new bundleId is provided
+  //   }
+  
+  //   const bundleStoreRefOld = ref(database, `BundleStore/${bundleData.orderNumber}/${bundleData.cutNumber}/sizes/${bundleData.size}/bundles/${bundleId}`);
+  //   const inQueueRef = ref(database, `Inqueue/${line}/${newBundleId}`);
+  
+  //   // Perform the deletion of the old bundle
+  //   remove(bundleStoreRefOld)
+  //     .then(() => {
+  //       console.log(`Old Bundle ID ${bundleId} removed from BundleStore.`);
+  
+  //       // Add the bundle with the new bundle ID to the Inqueue node
+  //       return set(inQueueRef, {
+  //         orderNumber: bundleData.orderNumber,
+  //         size: bundleData.size,
+  //         noOfPieces: bundleData.noOfPieces,
+  //         italyPo:bundleData.italyPo,
+  //         productionPo:bundleData.productionPo,
+  //       });
+  //     })
+  //     .then(() => {
+  //       console.log(`New Bundle ID ${newBundleId} added to Inqueue under ${line}.`);
+  
+  //       // Update local state by filtering out the transferred bundle and adding the updated bundle with the new ID
+  //       setBundles((prevBundles) =>
+  //         prevBundles
+  //           .filter((bundle) => bundle.bundleId !== bundleId) // Remove the old bundleId
+  //           //.concat({ ...bundleData, bundleId: newBundleId }) // Add the updated bundle
+  //       );
+  
+  //       // Remove the old bundle ID from the temp changes
+  //       setTempBundleIdChanges((prevChanges) => {
+  //         const { [bundleId]: removed, ...rest } = prevChanges;
+  //         return rest;
+  //       });
+  //     })
+  //     .catch((error) => {
+  //       console.error('Error during the transfer process:', error);
+  //     });
+  // };
+  
+  const transferToLine = async (bundleId, line, bundleData) => {
     if (!bundleId || !line) {
       alert('Please provide both Bundle ID and Line.');
       return;
@@ -98,53 +150,67 @@ const Bundle = () => {
   
     // Find the new bundleId in the temp changes
     const newBundleId = tempBundleIdChanges[bundleId] || bundleId;
-
+  
     // Check if the user entered a new bundleId
     if (!newBundleId || newBundleId === bundleId) {
       alert('Please enter a Bundle ID.');
       return; // Exit the function if no new bundleId is provided
     }
   
-    const bundleStoreRefOld = ref(database, `BundleStore/${bundleData.orderNumber}/${bundleData.cutNumber}/sizes/${bundleData.size}/bundles/${bundleId}`);
-    const inQueueRef = ref(database, `Inqueue/${line}/${newBundleId}`);
+    try {
+      // Reference to the specific line in the Inqueue node
+      const lineRef = ref(database, `Inqueue/${line}`);
+      
+      // Query to check if the newBundleId exists under the specific line
+      const bundleExistsQuery = query(lineRef, orderByChild('bundleId'), equalTo(newBundleId));
+      
+      const snapshot = await get(bundleExistsQuery);
+      //console.log(snapshot.val())
+      // Check if the bundle already exists under the specific line
+      if (snapshot.exists()) {
+          alert(`Bundle ID ${newBundleId} already exists in ${line}.`);
+          return; // Exit the function if bundle already exists
+      }
   
-    // Perform the deletion of the old bundle
-    remove(bundleStoreRefOld)
-      .then(() => {
-        console.log(`Old Bundle ID ${bundleId} removed from BundleStore.`);
+      // Proceed with transferring the bundle
+      const bundleStoreRefOld = ref(database, `BundleStore/${bundleData.orderNumber}/${bundleData.cutNumber}/sizes/${bundleData.size}/bundles/${bundleId}`);
+      const inQueueRef = ref(database, `Inqueue/${line}/${newBundleId}`);
   
-        // Add the bundle with the new bundle ID to the Inqueue node
-        return set(inQueueRef, {
-          orderNumber: bundleData.orderNumber,
-          size: bundleData.size,
-          noOfPieces: bundleData.noOfPieces,
-          italyPo:bundleData.italyPo,
-          productionPo:bundleData.productionPo
-        });
-      })
-      .then(() => {
-        console.log(`New Bundle ID ${newBundleId} added to Inqueue under ${line}.`);
+      // Perform the deletion of the old bundle
+      await remove(bundleStoreRefOld);
+      console.log(`Old Bundle ID ${bundleId} removed from BundleStore.`);
   
-        // Update local state by filtering out the transferred bundle and adding the updated bundle with the new ID
-        setBundles((prevBundles) =>
-          prevBundles
-            .filter((bundle) => bundle.bundleId !== bundleId) // Remove the old bundleId
-            //.concat({ ...bundleData, bundleId: newBundleId }) // Add the updated bundle
-        );
-  
-        // Remove the old bundle ID from the temp changes
-        setTempBundleIdChanges((prevChanges) => {
-          const { [bundleId]: removed, ...rest } = prevChanges;
-          return rest;
-        });
-      })
-      .catch((error) => {
-        console.error('Error during the transfer process:', error);
+      // Add the bundle with the new bundle ID to the Inqueue node
+      await set(inQueueRef, {
+        orderNumber: bundleData.orderNumber,
+        size: bundleData.size,
+        noOfPieces: bundleData.noOfPieces,
+        italyPo: bundleData.italyPo,
+        productionPo: bundleData.productionPo,
+        bundleId: newBundleId // Ensure to store the new bundleId
       });
+      console.log(`New Bundle ID ${newBundleId} added to Inqueue under ${line}.`);
+  
+      // Update local state by filtering out the transferred bundle
+      setBundles((prevBundles) =>
+        prevBundles.filter((bundle) => bundle.bundleId !== bundleId)
+      );
+  
+      // Remove the old bundle ID from the temp changes
+      setTempBundleIdChanges((prevChanges) => {
+        const { [bundleId]: removed, ...rest } = prevChanges;
+        return rest;
+      });
+  
+    } catch (error) {
+      console.error('Error during the transfer process:', error);
+    }
   };
   
+  
   const displayBundlesInTable = (bundles) => (
-    <table border={1}>
+    <div className='bundleTable'>
+    <table border={1} align='center'>
     <thead>
       <tr>
         <th>Bundle ID</th>
@@ -197,6 +263,7 @@ const Bundle = () => {
       )}
     </tbody>
   </table>
+  </div>
   );
 
   
@@ -261,14 +328,10 @@ const handleCutNumberChange = (e) => {
 
 
   return (
-    <div>
-      <Helmet>
-        <title>Bundle Details</title>
-      </Helmet>
+    <div className='holder'>
       <Titlepic/>
       <SignOut/>
-      
-    <h1>Search Cutting Details</h1>
+    <h2>Search Cutting Details</h2>
     <input
       type="text"
       placeholder="Order Number"

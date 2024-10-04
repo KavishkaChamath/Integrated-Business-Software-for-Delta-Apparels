@@ -92,6 +92,7 @@ button[type='button'].generate-qr-code:hover {
   width: 97%; 
   background-color: #9dd7fe9f;
   border-color: blue;
+  text-align: center;
 }
 
 .addButton button{
