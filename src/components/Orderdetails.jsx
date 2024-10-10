@@ -173,7 +173,7 @@ export const Orderdetails = () => {
       .catch((error) => {
         console.error('Error adding order: ', error);
       });
-      navigate('/pages/OrderHome');
+      navigate('/pages/OrderHome', { replace: true });
   };
 
   const handleOrderTypeChange = (e) => {

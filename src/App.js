@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import {AdminLog} from './components/AdminLog';
 import Login from './pages/Login';
@@ -24,6 +24,8 @@ import Cutting from './components/Cutting';
 import CutHome from './pages/CutHome';
 import InqueueTable from './components/Inqueue';
 import CheckPauseTime from './components/Admin/CheckPauseTime';
+import CurrentStatus from './components/Admin/CurrentStatus';
+import Summary from './components/Admin/Summary';
 
 
 function App() {
@@ -56,6 +58,8 @@ function App() {
        <Route path="/comp/cutting" element={<Cutting/>} />
        <Route path="/comp/inqueue" element={<InqueueTable/>} />
        <Route path="/comp/admin/pauseTime" element={<CheckPauseTime/>} />
+       <Route path="/admin/ongoing" element={<CurrentStatus/>} />
+       <Route path="/admin/summary" element={<Summary/>} />
        <Route path="/" element={<Home />} />
       </Routes>
     </Router>

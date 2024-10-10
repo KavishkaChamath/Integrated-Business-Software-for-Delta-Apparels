@@ -2414,58 +2414,172 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
   };
 
 
-  function handleCheckPendingAndSave() {
+  // function handleCheckPendingAndSave() {
+  //   // Step 1: Check if pending is equal to 0
+  //   if (pendingValue === 0) {
+
+  //     let currentOperationsRef;
+  
+  // // Determine the current operations path based on selected bundle
+  // if (selectedIncompleteBundle) {
+  //   currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedIncompleteBundle}`);
+  // } else if (selectedBundle) {
+  //   currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedBundle}`);
+  // } else {
+  //   console.error("No valid selection made.");
+  //   return;
+  // }
+
+  // // Step 1: Retrieve data from `currentOperations/{selectedLine}/{selectedBundle}`
+  // get(currentOperationsRef)
+  //   .then((snapshot) => {
+  //     if (!snapshot.exists()) {
+  //       throw new Error("Order data not found in currentOperations");
+  //     }
+
+  //     const orderData = snapshot.val(); // Get data from currentOperations
+      
+  //     // Prepare data to be used for updates
+  //     const {
+  //       italyPo,
+  //       productionPO,
+  //       styleNumber,
+  //       colour,
+  //       colourCode,
+  //       size,
+  //       "1stQuality": newFirstQuality,
+  //       "2ndQuality": newSecondQuality,
+  //       Rejection: newRejection,
+  //     } = orderData;
+
+  //     // Step 2: Check if data exists in Line Operations under `${orderData.orderId}/${orderData.productionPO}`
+  //     const lineOperationsRef = ref(database, `Line Operations/${orderData.orderId}/${orderData.productionPO}`);
+      
+  //     return get(lineOperationsRef).then((lineSnapshot) => {
+  //       if (lineSnapshot.exists()) {
+  //         const existingData = lineSnapshot.val();
+
+  //         // If data exists, retrieve and update only the quality and rejection values
+  //         const updatedFirstQuality = (existingData["1stQuality"] || 0) + (newFirstQuality || 0);
+  //         const updatedSecondQuality = (existingData["2ndQuality"] || 0) + (newSecondQuality || 0);
+  //         const updatedRejection = (existingData.Rejection || 0) + (newRejection || 0);
+
+  //         // Update the existing data
+  //         return set(lineOperationsRef, {
+  //           ...existingData, // Keep existing values
+  //           "1stQuality": updatedFirstQuality,
+  //           "2ndQuality": updatedSecondQuality,
+  //           Rejection: updatedRejection,
+  //         });
+  //       } else {
+  //         // If no data exists, set all values as new
+  //         return set(lineOperationsRef, {
+  //           italyPo,
+  //           productionPO,
+  //           styleNumber,
+  //           colour,
+  //           colourCode,
+  //           size,
+  //           "1stQuality": newFirstQuality || 0,
+  //           "2ndQuality": newSecondQuality || 0,
+  //           Rejection: newRejection || 0,
+  //           OrderStartDate: currentDate
+  //         });
+  //       }
+  //     })
+  //   })
+    
+  //   .then(() => {
+  //     console.log("Order data successfully updated in Line Operations and daily runtime updated.");
+  //     retrieveOrderData(orderData.orderId,orderData.italyPO,orderData.productionPO);
+  //     alert("Bundle completed successfully.");
+  //     handleFinish();
+  //     remove(currentOperationsRef); // Remove the current operation after completion
+  //   })
+  //   .catch((error) => {
+  //     console.error("Error updating order data or daily runtime:", error);
+  //   });
+  //   const currentDate = new Date().toISOString().split('T')[0];
+  //     // Define the reference for dailyUpdates using the current date and selected line
+  //    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+
+  //       // Update the dailyUpdatesRef with the new pause time
+  //       update(dailyUpdatesRef, {
+  //         endTime: serverTimestamp(), // Optionally update the startTime to resume
+  //         isPaused: true,
+  //       })
+  //         .then(() => {
+  //           console.log('Pause time calculated and updated successfully.');
+  //           //setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
+  //         })
+  //         .catch((error) => {
+  //           console.error('Error updating pause time:', error);
+  //         });   
+  //   } else {
+  //     console.log("Pending is not 0, no action taken.");
+  //   }
+  // }
+
+  async function handleCheckPendingAndSave() {
     // Step 1: Check if pending is equal to 0
     if (pendingValue === 0) {
-
+      const currentDate = new Date().toISOString().split('T')[0];
       let currentOperationsRef;
   
-  // Determine the current operations path based on selected bundle
-  if (selectedIncompleteBundle) {
-    currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedIncompleteBundle}`);
-  } else if (selectedBundle) {
-    currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedBundle}`);
-  } else {
-    console.error("No valid selection made.");
-    return;
-  }
-
-  // Step 1: Retrieve data from `currentOperations/{selectedLine}/{selectedBundle}`
-  get(currentOperationsRef)
-    .then((snapshot) => {
-      if (!snapshot.exists()) {
-        throw new Error("Order data not found in currentOperations");
+      // Determine the current operations path based on selected bundle
+      if (selectedIncompleteBundle) {
+        currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedIncompleteBundle}`);
+      } else if (selectedBundle) {
+        currentOperationsRef = ref(database, `currentOperations/${selectedLine}/${selectedBundle}`);
+      } else {
+        console.error("No valid selection made.");
+        return;
       }
-
-      const orderData = snapshot.val(); // Get data from currentOperations
-      
-      // Prepare data to be used for updates
-      const {
-        italyPo,
-        productionPO,
-        styleNumber,
-        colour,
-        colourCode,
-        size,
-        "1stQuality": newFirstQuality,
-        "2ndQuality": newSecondQuality,
-        Rejection: newRejection,
-      } = orderData;
-
-      // Step 2: Check if data exists in Line Operations under `${orderData.orderId}/${orderData.productionPO}`
-      const lineOperationsRef = ref(database, `Line Operations/${orderData.orderId}/${orderData.productionPO}`);
-      
-      return get(lineOperationsRef).then((lineSnapshot) => {
+      let inqueueRef;
+      if (selectedIncompleteBundle) {
+        inqueueRef = ref(database, `Inqueue/${selectedLine}/${selectedIncompleteBundle}`);
+      } else if (selectedBundle) {
+        inqueueRef = ref(database, `Inqueue/${selectedLine}/${selectedBundle}`);
+      } else {
+        console.error("No valid selection made.");
+        return;
+      }
+  
+      try {
+        // Step 2: Retrieve data from `currentOperations/{selectedLine}/{selectedBundle}`
+        const snapshot = await get(currentOperationsRef);
+        if (!snapshot.exists()) {
+          throw new Error("Order data not found in currentOperations");
+        }
+  
+        const orderData = snapshot.val(); // Get data from currentOperations
+        const {
+          orderId,
+          italyPo,
+          productionPO,
+          styleNumber,
+          colour,
+          colourCode,
+          size,
+          "1stQuality": newFirstQuality,
+          "2ndQuality": newSecondQuality,
+          Rejection: newRejection,
+        } = orderData;
+  
+        // Step 3: Check if data exists in Line Operations under `${orderData.orderId}/${orderData.productionPO}`
+        const lineOperationsRef = ref(database, `Line Operations/${orderData.orderId}/${orderData.productionPO}`);
+        const lineSnapshot = await get(lineOperationsRef);
+  
         if (lineSnapshot.exists()) {
           const existingData = lineSnapshot.val();
-
+  
           // If data exists, retrieve and update only the quality and rejection values
           const updatedFirstQuality = (existingData["1stQuality"] || 0) + (newFirstQuality || 0);
           const updatedSecondQuality = (existingData["2ndQuality"] || 0) + (newSecondQuality || 0);
           const updatedRejection = (existingData.Rejection || 0) + (newRejection || 0);
-
+  
           // Update the existing data
-          return set(lineOperationsRef, {
+          await set(lineOperationsRef, {
             ...existingData, // Keep existing values
             "1stQuality": updatedFirstQuality,
             "2ndQuality": updatedSecondQuality,
@@ -2473,7 +2587,7 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
           });
         } else {
           // If no data exists, set all values as new
-          return set(lineOperationsRef, {
+          await set(lineOperationsRef, {
             italyPo,
             productionPO,
             styleNumber,
@@ -2483,40 +2597,139 @@ const [authSuccessCallback, setAuthSuccessCallback] = useState(null); // Callbac
             "1stQuality": newFirstQuality || 0,
             "2ndQuality": newSecondQuality || 0,
             Rejection: newRejection || 0,
+            OrderStartDate: currentDate,
           });
         }
-      })
-    })
-    .then(() => {
-      console.log("Order data successfully updated in Line Operations and daily runtime updated.");
-      alert("Bundle completed successfully.");
-      handleFinish();
-      remove(currentOperationsRef); // Remove the current operation after completion
-    })
-    .catch((error) => {
-      console.error("Error updating order data or daily runtime:", error);
-    });
-    const currentDate = new Date().toISOString().split('T')[0];
-      // Define the reference for dailyUpdates using the current date and selected line
-     const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
-
+  
+        // Step 4: Update Line Summary
+        const lineSummaryRef = ref(database, `Line Summary/${orderData.orderId}/${orderData.productionPO}/${selectedLine}`);
+        const summarySnapshot = await get(lineSummaryRef);
+  
+        if (summarySnapshot.exists()) {
+          const summaryData = summarySnapshot.val();
+  
+          // Update existing values
+          const updatedSummaryFirstQuality = (summaryData["1stQuality"] || 0) + (newFirstQuality || 0);
+          const updatedSummarySecondQuality = (summaryData["2ndQuality"] || 0) + (newSecondQuality || 0);
+          const updatedSummaryRejection = (summaryData.Rejection || 0) + (newRejection || 0);
+  
+          // Update the existing summary data
+          await set(lineSummaryRef, {
+            ...summaryData, // Keep existing values
+            "1stQuality": updatedSummaryFirstQuality,
+            "2ndQuality": updatedSummarySecondQuality,
+            Rejection: updatedSummaryRejection,
+          });
+        } else {
+          // If no data exists, set all values as new
+          await set(lineSummaryRef, {
+            "1stQuality": newFirstQuality || 0,
+            "2ndQuality": newSecondQuality || 0,
+            Rejection: newRejection || 0,
+          });
+        }
+  
+        console.log("Order data successfully updated in Line Operations and daily runtime updated.");
+        retrieveOrderData(orderData.orderId, orderData.italyPo, orderData.productionPO);
+        alert("Bundle completed successfully.");
+        handleFinish();
+        await remove(currentOperationsRef); // Remove the current operation after completion
+        await remove(inqueueRef);
+        
+        // Define the reference for dailyUpdates using the current date and selected line
+        const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}/${selectedLine}`);
+  
         // Update the dailyUpdatesRef with the new pause time
-        update(dailyUpdatesRef, {
+        await update(dailyUpdatesRef, {
           endTime: serverTimestamp(), // Optionally update the startTime to resume
           isPaused: true,
-        })
-          .then(() => {
-            console.log('Pause time calculated and updated successfully.');
-            //setSelectedIncompleteBundle(previousSelectedIncompleteBundle);
-          })
-          .catch((error) => {
-            console.error('Error updating pause time:', error);
-          });   
+        });
+        console.log('Pause time activated.');
+        
+      } catch (error) {
+        console.error("Error updating order data or daily runtime:", error);
+      }
     } else {
       console.log("Pending is not 0, no action taken.");
+        
     }
   }
   
+  
+ // const [quantity, setQuantity] = useState("");
+
+  const retrieveOrderData = async (orderNumber, italyPo, productionPo) => {
+  let quantity = 0;
+  console.log("or"+orderNumber+" ita"+italyPo+"po "+productionPo)
+    const orderRef = ref(database, 'orders');
+    try {
+      const snapshot = await get(orderRef);
+      if (snapshot.exists()) {
+        const ordersData = snapshot.val();
+        // Loop through the orders to find the matching orderNumber
+        let orderFound = false;
+        for (const orderId in ordersData) {
+          const order = ordersData[orderId];
+          if (order.orderNumber === orderNumber &&
+            order.italyPO === italyPo &&
+            order.productionPO === productionPo) {
+            // Order found, return the details
+            quantity=order.orderQuantity;
+            //setQuantity(order.orderQuantity || '0');
+            console.log("Matching order found:", order);
+            orderFound = true;
+            break; // Exit the loop once the order is found
+          }
+        }
+        // If no matching order is found
+        if (!orderFound) {
+          console.warn('No matching order found.');
+          alert('No matching order found for the provided details.');
+        }
+      } else {
+        console.warn('No orders found in the database.');
+      }
+      //console.log("quntity "+quantity)
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+    }
+    try {
+      const lineOperationsRef = ref(database, `Line Operations/${orderNumber}/${productionPo}`);
+      const completeOperationsRef = ref(database, `Complete Orders/${orderNumber}/${productionPo}`);
+      const snapshot = await get(lineOperationsRef);
+  
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const firstQuality = data['1stQuality'] || 0;
+        const secondQuality = data['2ndQuality'] || 0;
+        const rejection = data['Rejection'] || 0;
+
+        const quantityNumber = Number(quantity);
+        const totalSum = firstQuality + secondQuality + rejection;
+        if(quantityNumber===totalSum){
+          const currentDate = new Date();
+          const formattedDate = currentDate.toISOString().split('T')[0]; 
+          const updatedData = {
+            ...data,
+            endDate: formattedDate,
+          };
+  
+          // Copy the updated data to Complete Orders node
+          await set(completeOperationsRef, updatedData);
+          // Remove data from Line Operations node
+          await remove(lineOperationsRef);
+          console.log("Updated complete orders.")
+        }
+        return 0;
+      } else {
+        console.log('No data available');
+        return 0;
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      return 0;
+    }
+  };
 
   return (
     <div>

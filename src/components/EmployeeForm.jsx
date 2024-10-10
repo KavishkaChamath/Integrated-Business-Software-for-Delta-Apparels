@@ -264,9 +264,9 @@ const validateEmployeeNumber = (number) => {
           <div className='form-group2'>
             <label>Gender</label>
             <div className='radio-group'>
-              <input type='radio' id='male' name='gender' value='male' checked={gender === 'male'} onChange={(e) => setGender(e.target.value)} />
+              <input type='radio' id='male' name='gender' value='male' checked={gender === 'male'} onChange={(e) => setGender(e.target.value)} required/>
               <label htmlFor='male'>Male</label>
-              <input type='radio' id='female' name='gender' value='female' checked={gender === 'female'} onChange={() => setGender('female')} />
+              <input type='radio' id='female' name='gender' value='female' checked={gender === 'female'} onChange={() => setGender('female')}/>
               <label htmlFor='female'>Female</label>
             </div>
           </div>
@@ -294,25 +294,31 @@ const validateEmployeeNumber = (number) => {
           </div>
             <div className='form-group2'>
             <label>Direct/ Indirect</label>
-            <div className='checkbox-group'>
-              <input 
-                type='checkbox' 
-                id='direct' 
-                name='direct' 
-                checked={workType === 'Direct'} 
-                onChange={() => handleCheckboxChange('Direct')}
-              />
-              <label htmlFor='direct'>Direct</label>
+            <div className='radio-group'>
+  <input 
+    type='radio' 
+    id='direct' 
+    name='workType' 
+    value='Direct' 
+    checked={workType === 'Direct'} 
+    onChange={() => handleCheckboxChange('Direct')}
+    required // This makes it a required field
+  />
+  <label htmlFor='direct'>Direct</label>
 
-              <input 
-                type='checkbox' 
-                id='indirect' 
-                name='indirect' 
-                checked={workType === 'Indirect'} 
-                onChange={() => handleCheckboxChange('Indirect')}
-              />
-              <label htmlFor='indirect'>Indirect</label>
-            </div>
+  <input 
+    type='radio' 
+    id='indirect' 
+    name='workType' 
+    value='Indirect' 
+    checked={workType === 'Indirect'} 
+    onChange={() => handleCheckboxChange('Indirect')}
+    required
+  />
+  <label htmlFor='indirect'>Indirect</label>
+
+
+</div>
           </div>
           <div className='form-group2'>
             <label>Employee Line Allocation</label>

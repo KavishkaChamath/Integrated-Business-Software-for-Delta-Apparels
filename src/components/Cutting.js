@@ -259,7 +259,7 @@ const CuttingDetailsForm = () => {
   //   });
   // };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     filteredOrders.forEach(order => {
       const sizeKey = sanitizeKey(order.size);
       const cutNumberKey = sanitizeKey(cutNumbers[order.id] || '');
@@ -324,7 +324,7 @@ const CuttingDetailsForm = () => {
   };
   
   
-  const saveBundle = () => {
+  const saveBundle = async () => {
     filteredOrders.forEach(order => {
       const sizeKey = sanitizeKey(order.size); // Sanitize size key
       const cutNumberKey = sanitizeKey(cutNumbers[order.id] || ''); // Get and sanitize the cut number
@@ -372,7 +372,7 @@ const CuttingDetailsForm = () => {
           return set(bundleStoreRef, updatedData);
         })
         .then(() => {
-          alert(`Bundle data for order ${order.orderNumber} saved successfully.`);
+         // alert(`Bundle data for order ${order.orderNumber} saved successfully.`);
           setCutNumbers(''); // Reset states as needed
           setNoOfPieces('');
           setRatios('');
@@ -383,11 +383,43 @@ const CuttingDetailsForm = () => {
     });
   };
   
-  const saveData= () => {
-    handleSave();
-    saveBundle();
-  }
+  const saveData = async () => {
+    // Assuming cutNumbers, noOfPieces, and ratios are state objects
+    const isFormValid = validateForm(cutNumbers, noOfPieces, ratios);
   
+    if (isFormValid) {
+      await handleSave();
+      await saveBundle();
+      console.log("Data saved successfully");
+    } else {
+      alert('cutNumber, noOfPieces and ratio should contain only numbers');
+    }
+  };
+  
+
+  const validateForm = (cutNumbers, noOfPieces, ratios) => {
+    let isValid = true;
+  
+    // Function to validate if the input contains only numbers
+    const validateNumberInput = (value) => {
+      const regex = /^[0-9]*$/; // Regular expression to allow only numbers
+      return regex.test(value);
+    };
+  
+    // Validate all fields
+    const fieldsToValidate = { cutNumbers, noOfPieces, ratios };
+  
+    Object.keys(fieldsToValidate).forEach((field) => {
+      Object.values(fieldsToValidate[field]).forEach((value) => {
+        if (!validateNumberInput(value)) {
+          isValid = false;
+          console.error(`${field} contains invalid input: ${value}`);
+        }
+      });
+    });
+  
+    return isValid; // Return true if all inputs are valid, otherwise false
+  };
   
 
   return (

@@ -34,7 +34,7 @@ const EmployeeTable = () => {
       setFilteredEmployees(employees); // Show all employees if search term is empty
       setSelectedEmployee(null); // Clear the selected employee
       setShowEditButton(false); // Hide the button
-      alert('Please enter an Order Number or Customer Name to search.');
+      alert('Please enter an Employee Number or Employee Name to search.');
       return;
       
     } else {
