@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import { useLocation,useNavigate } from 'react-router-dom';
 import { ref, push } from 'firebase/database';
 import { database } from '../Firebase'; 
 
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
+
+import { UserContext } from '../components/UserDetails';
+import welcome from '../components/Images/img101.png';
 
 const EditOrder = () => {
   const location = useLocation();
@@ -32,6 +35,8 @@ const EditOrder = () => {
 
   const navigate = useNavigate();
 
+  const { user } = useContext(UserContext);
+
   const [isChangeClicked, setIsChangeClicked] = useState(false);
 
   useEffect(() => {
@@ -56,6 +61,21 @@ const EditOrder = () => {
 
     }
   }, [orderData]);
+
+
+  const navigateHome = ()=>{
+    if (user && user.occupation) { // Check if `user` and `occupation` exist
+      if (user.occupation === "IT Section") {
+        navigate('/pages/ItHome');
+      } else if (user.occupation === "Admin") {
+        navigate('/pages/Admin');
+      } else {
+        console.log("User occupation not recognized!");
+      }
+    } else {
+      alert("User data is not available. Please try again.");
+    }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -147,7 +167,19 @@ const EditOrder = () => {
       <Titlepic/>
       <SignOut/>
       <div className='holder'>
-
+      <table border={0} width='100%' align="right" >
+        <tr>
+            <th></th>
+            <th width='300px'></th>
+            <th></th>
+            <th className='welImg' width='50px'><img src={welcome} alt="Description of the image"/></th>
+          <th width='100px'><p className='welcomeName'>{user?.username || 'User'}</p></th>
+        </tr>
+        </table>
+      <button className='homeBtn' onClick={navigateHome}>
+              Home
+      </button>
+      
       <button className="editaddSize"onClick={handleChangeClick}>
         {isChangeClicked ? 'Change size only ' : 'Edit all data'}
       </button>
@@ -281,75 +313,75 @@ const EditOrder = () => {
           <h2>Add Order</h2>
           <form className='order-form' onSubmit={handleSubmit}>
             <div className='form-group1'>
-              <label>Order Number</label>
+              <label>Order Number :</label>
               <label>{orderNumber}</label>
             </div>
             <div className='form-group1'>
-              <label>Customer</label>
+              <label>Customer     :</label>
               <label>{customer}</label>
             </div>
          {/* Order Type Field */}
          <div className='form-group1'>
-                <label>Order Type</label>
+                <label>Order Type :</label>
                 <label>{orderType} </label>
               </div>
 
                     {/* Order Category Field */}
                     <div className='form-group1'>
-                <label>Order Category</label>
+                <label>Order Category :</label>
                 <label>{orderCategory} </label>
               </div>
             <div className='form-group1'>
-              <label>Style Number</label>
+              <label>Style Number :</label>
               <label>{styleNumber}</label>
             </div>
             <div className='form-group1'>
-              <label>Product Category</label>
+              <label>Product Category :</label>
               <label>{productCategory}</label>
             </div>
             <div className='form-group1'>
-              <label>Colour</label>
+              <label>Colour :</label>
               <label>{colour}</label>
             </div>
             
             <div className='form-group1'>
-              <label>SMV</label>
+              <label>SMV :</label>
               <label>{smv}</label>
             </div>
             
             
             <div className='form-group1'>
-              <label>Colour Code</label>
+              <label>Colour Code :</label>
               <label>{colourCode}</label>
             </div>
             
             <div className='form-group1'>
-              <label>PSD</label>
+              <label>PSD :</label>
               <label>{psd}</label>
             </div>
             <div className='form-group1'>
-              <label>PED</label>
+              <label>PED :</label>
               <label>{ped}</label>
             </div>
 
 
             <div className='form-group1'>
-              <label>Size</label>
+              <label>Size :</label>
               <input type='text' placeholder='Size' 
                 onChange={(e) => setSize(e.target.value)} required />
             </div>
             <div className='form-group1'>
-              <label>Italy PO</label>
+              <label>Italy PO :</label>
               <input type='text' placeholder='Italy PO' 
                 onChange={(e) => setItalyPO(e.target.value)} required />
             </div>
             <div className='form-group1'>
-              <label>Order Quantity</label>
+              <label>Order Quantity :</label>
               <input type='text' placeholder='Order Quantity' 
                 onChange={(e) => setOrderQuantity(e.target.value)} required />
             </div>
             <div className='form-group1'>
-              <label>Production PO</label>
+              <label>Production PO :</label>
               <input type='text' placeholder='Production PO' 
                 onChange={(e) => setProductionPO(e.target.value)} required />
             </div>

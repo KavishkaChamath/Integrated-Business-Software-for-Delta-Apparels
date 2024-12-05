@@ -105,7 +105,7 @@ h2 {
   display:flex;
   flex-direction: row;
   width: 400px; /* Adjust the width to fit two columns */
-  margin: 0 2.5% 1em 2.5%; /* Add horizontal margin for spacing */
+  margin: 0 2.5% 0.4em 2.5%; /* Add horizontal margin for spacing */
 }
 .form-group1 label{
   width: 200px;
@@ -264,11 +264,11 @@ button[type='submit']:hover {
   margin-bottom: 1.5ch;
   font-size: 15px; /* Increase font size */
   width: 200px; /* Set a fixed width for the buttons */
-  height: 35px; /* Set a fixed height for the buttons */
+  height: 30px; /* Set a fixed height for the buttons */
   text-align: center;
   font-weight:500;
   border: none; /* Optional: remove the default button border */
-  border-radius: 5px; /* Optional: add rounded corners */
+  border-radius: 30px; /* Optional: add rounded corners */
   background-color: #7299b4c5; /* Optional: change the background color */
   color: rgb(4, 4, 69); /* Optional: change the text color */
   cursor: pointer; /* Optional: change cursor to pointer on hover */

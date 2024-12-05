@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import { useLocation,useNavigate } from 'react-router-dom';
 import { ref, update } from 'firebase/database';
 import { database } from '../Firebase'; 
@@ -6,6 +6,9 @@ import { database } from '../Firebase';
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
 import { Helmet } from 'react-helmet';
+import { UserContext } from '../components/UserDetails';
+import welcome from '../components/Images/img101.png';
+
 
 const EditEmployeeData = () => {
   const location = useLocation();
@@ -22,7 +25,10 @@ const EditEmployeeData = () => {
   const [designation, setDesignation] = useState('');
   const [workType, setWorkType] = useState('');
   const [lineAllocation, setLineAllocation] = useState('');
+ 
+  const [customDesignation, setCustomDesignation] = useState('');
 
+  const { user } = useContext(UserContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,12 +44,40 @@ const EditEmployeeData = () => {
       setDesignation(employeeData.designation || '');
       setWorkType(employeeData.workType || '');
       setLineAllocation(employeeData.lineAllocation || '');
+      
+      if (employeeData.designation === 'Other') {
+        setCustomDesignation(employeeData.designation);
+      }
+      console.log(employeeData)
     }
   }, [employeeData]);
 
+  const navigateHome = ()=>{
+    if (user && user.occupation) { // Check if `user` and `occupation` exist
+      if (user.occupation === "IT Section") {
+        navigate('/pages/ItHome');
+      } else if (user.occupation === "Admin") {
+        navigate('/pages/Admin');
+      } else {
+        console.log("User occupation not recognized!");
+      }
+    } else {
+      alert("User data is not available. Please try again.");
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+    if (!validatePhoneNumber(contactNumber1)) {
+      alert("Invalid Contact Number 1. Please enter a valid 10-digit number.");
+      return; // Exit the function without submitting
+    }
+
+    if (!validateDateJoined(dateJoined)) {
+      return; // Exit the function if date validation fails
+
+    }
+    const finalDesignation = designation === 'Other' ? customDesignation : designation;
     if (employeeData && employeeData.id) {
       const employeeRef = ref(database, `employees/${employeeData.id}`);
       update(employeeRef, {
@@ -55,7 +89,7 @@ const EditEmployeeData = () => {
         contactNumber2,
         dateJoined,
         gender,
-        designation,
+        designation: finalDesignation,
         workType,
         lineAllocation
       })
@@ -84,6 +118,23 @@ const EditEmployeeData = () => {
       // Automatically move cursor to the month part (if supported by browser)
       e.target.value += '-'; // Adding a hyphen to move to the month
     }
+  };
+
+  const validateDateJoined = (date) => {
+    const today = new Date().toISOString().split("T")[0];
+    const minDate = "2000-01-01";
+  
+    if (date > today) {
+      alert("Date of Joined cannot be a future date.");
+      setDateJoined(''); // Optionally reset the date field
+      return false;
+    }
+    if (date < minDate) {
+      alert("Date of Joined cannot be before 2000-01-01.");
+      setDateJoined(''); // Optionally reset the date field
+      return false;
+    }
+    return true; // Validation passed
   };
 
   const validatePhoneNumber = (number) => {
@@ -117,8 +168,21 @@ const EditEmployeeData = () => {
       </Helmet>
       <Titlepic/>
       <SignOut/>
+
       {/* Header with photo and gradient background */}
-      <div className='empholder'>
+      <div className='holder'>
+      <table border={0} width='100%' align="right" >
+        <tr>
+            <th></th>
+            <th width='300px'></th>
+            <th></th>
+            <th className='welImg' width='50px'><img src={welcome} alt="Description of the image"/></th>
+          <th width='100px'><p className='welcomeName'>{user?.username || 'User'}</p></th>
+        </tr>
+        </table>
+      <button className='homeBtn' onClick={navigateHome}>
+             Home
+      </button>
       <div className='empwrapper'>
         <div className="transparent-box">
         <center><h2>Edit Employee Data</h2></center>
@@ -186,27 +250,16 @@ const EditEmployeeData = () => {
             </div>
           </div>
           <div className='form-group2'>
-            <label>Designation</label>
-            <select
-                value={designation}
-                onChange={(e) => setDesignation(e.target.value)}
-                required
-              >
-                <option value=''>Select Designation</option>
-                <option value='Manager'>Manager</option>
-                <option value='Machine Operator'>Machine Operator</option>
-                <option value='Tranning Machine Operator'>tranning Machine Operator</option>
-                <option value='Quality Checker'>Quality Checker</option>
-                <option value='Helper'>Helper</option>
-                <option value=''></option>
-                <option value=''></option>
-                <option value=''></option>
-                <option value=''></option>
-                <option value=''></option>
-                <option value=''></option>
-              {/* Add options as needed */}
-            </select>
-          </div>
+          <label>Designation</label>
+          <input
+            type='text'
+            value={designation}
+            onChange={(e) => setDesignation(e.target.value)}
+            placeholder='Enter Designation'
+            required
+          />
+        </div>
+
             <div className='form-group2'>
             <label>Direct/ Indirect</label>
             <div className='checkbox-group'>
@@ -234,7 +287,7 @@ const EditEmployeeData = () => {
             <select
                 value={lineAllocation}
                 onChange={(e) => setLineAllocation(e.target.value)}
-                required
+               
               >
                 <option value='' disabled>Select a line</option>
                 <option value='Line 1'>Line 1</option>
@@ -243,12 +296,12 @@ const EditEmployeeData = () => {
                 <option value='Line 4'>Line 4</option>
                 <option value='Line 5'>Line 5</option>
                 <option value='Line 6'>Line 6</option>
-                <option value='Line 1'>Line 1</option>
-                <option value='Line 2'>Line 2</option>
-                <option value='Line 3'>Line 3</option>
-                <option value='Line 4'>Line 4</option>
-                <option value='Line 5'>Line 5</option>
-                <option value='Line 6'>Line 6</option>
+                <option value='Line 1'>Line 7</option>
+                <option value='Line 2'>Line 8</option>
+                <option value='Line 3'>Line 9</option>
+                <option value='Line 4'>Line 10</option>
+                <option value='Line 5'>Line 11</option>
+                <option value='Line 6'>Line 12</option>
               {/* Add options as needed */}
             </select>
           </div>

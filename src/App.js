@@ -1,5 +1,5 @@
 
-import { HashRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import {AdminLog} from './components/AdminLog';
 import Login from './pages/Login';
@@ -27,10 +27,12 @@ import CheckPauseTime from './components/Admin/CheckPauseTime';
 import CurrentStatus from './components/Admin/CurrentStatus';
 import Summary from './components/Admin/Summary';
 
+import { UserProvider } from './components/UserDetails';
 
 function App() {
   return (
     <div className="App">
+      <UserProvider>
       <Router>
        <Routes>
        <Route path="/components/AdminLog" element={<AdminLog />} />
@@ -64,7 +66,7 @@ function App() {
       </Routes>
     </Router>
     {/* <AdminLog/> */}
-    
+    </UserProvider>
     </div>
   );
 }

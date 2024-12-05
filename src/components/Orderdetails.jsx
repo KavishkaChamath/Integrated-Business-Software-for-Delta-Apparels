@@ -1,109 +1,12 @@
-// import React from 'react';
-// import './Orderdetails.css'; 
-
-
-
-// export const Orderdetails = () => {
-//   return (
-//     <div>
-      
-//       {/* Header with photo and gradient background */}
-//       <header className="header">
-//         <div className="header-content">
-//           <h1>Order Details</h1>
-//         </div>
-//       </header>
-
-//       {/* Order details */}
-//       <div className='wrapper'>
-//         <div className="transparent-box">
-//           <h2>Add Order</h2>
-//           <form className='order-form'>
-//             <div className='form-group1'>
-//               <label>Order Number </label>
-//               <input type='text' placeholder='Order Number' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>Customer </label>
-//               <input type='text' placeholder='Customer' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>Order type  </label>
-//               <select required>
-//                 <option value=''>Select Designation</option>
-//               </select>
-//             </div>
-//             <div className='form-group1'>
-//               <label>Order Category</label>
-//               <select required>
-//                 <option value=''>Select Designation</option>
-//               </select>
-//             </div>
-//             <div className='form-group1'>
-//               <label>Style Number </label>
-//               <input type='text' placeholder='Style Number' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>Product Category</label>
-//               <input type='text' placeholder='Product Category' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>Colour  </label>
-//               <input type='text' placeholder='Colour' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>Size</label>
-//               <input type='text' placeholder='Size' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>SMV</label>
-//               <input type='text' placeholder='SMV' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>Ithaly PO</label>
-//               <input type='text' placeholder='Ithaly PO' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>Order Quantity</label>
-//               <input type='text' placeholder='Order Quantity' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>PSD</label>
-//               <input type='text' placeholder='PSD' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>Colour Code</label>
-//               <input type='text' placeholder='Colour Code' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>Production PO</label>
-//               <input type='text' placeholder='Production PO' required />
-//             </div>
-//             <div className='form-group1'>
-//               <label>PED</label>
-//                <input type='text' placeholder='PED' required />
-//             </div>
-//             <button type='submit'>Add</button>
-//           </form>
-//         </div>
-//       </div>
-    
-//     </div>
-//   );
-// };
-
-// export default Orderdetails;
-
-
-
-
-import React, { useState } from 'react';
+import React, { useState,useContext } from 'react';
 import './Orderdetails.css'; 
 import { database } from '../Firebase';
-import { ref, push } from 'firebase/database';
+import { get,ref, push } from 'firebase/database';
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
 import { useNavigate } from 'react-router-dom';
+import { UserContext } from '../components/UserDetails';
+import welcome from '../components/Images/img101.png';
 
 export const Orderdetails = () => {
   const [orderNumber, setOrderNumber] = useState('');
@@ -128,8 +31,75 @@ export const Orderdetails = () => {
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const { user } = useContext(UserContext);
+
+  // const handleSubmit = (e) => {
+    
+  //   e.preventDefault();
+  //   const orderRef = ref(database, 'orders');
+  //   const newOrder = {
+  //     orderNumber,
+  //     customer,
+  //     orderType: showCustomOrderTypeInput ? customOrderType : orderType,
+  //     orderCategory: showCustomOrderCategoryInput ? customOrderCategory : orderCategory,
+  //     styleNumber,
+  //     productCategory,
+  //     colour,
+  //     size,
+  //     smv,
+  //     italyPO,
+  //     orderQuantity,
+  //     colourCode,
+  //     productionPO,
+  //     psd,
+  //     ped
+  //   };
+  //   push(orderRef, newOrder)
+  //     .then(() => {
+  //       console.log('Order added successfully');
+  //       // Optionally, reset the form
+  //       setOrderNumber('');
+  //       setCustomer('');
+  //       setOrderType('');
+  //       setCustomOrderType('');
+  //       setOrderCategory('');
+  //       setCustomOrderCategory('');
+  //       setStyleNumber('');
+  //       setProductCategory('');
+  //       setColour('');
+  //       setSize('');
+  //       setSmv('');
+  //       setItalyPO('');
+  //       setOrderQuantity('');
+  //       setColourCode('');
+  //       setProductionPO('');
+  //       setPsd('');
+  //       setPed('');
+  //     })
+  //     .catch((error) => {
+  //       console.error('Error adding order: ', error);
+  //     });
+  //     navigate('/pages/OrderHome', { replace: true });
+    
+  // };
+  
+  const navigateHome = ()=>{
+    if (user && user.occupation) { // Check if `user` and `occupation` exist
+      if (user.occupation === "IT Section") {
+        navigate('/pages/ItHome');
+      } else if (user.occupation === "Admin") {
+        navigate('/pages/Admin');
+      } else {
+        console.log("User occupation not recognized!");
+      }
+    } else {
+      alert("User data is not available. Please try again.");
+    }
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+  
     const orderRef = ref(database, 'orders');
     const newOrder = {
       orderNumber,
@@ -148,33 +118,52 @@ export const Orderdetails = () => {
       psd,
       ped
     };
-    push(orderRef, newOrder)
-      .then(() => {
-        console.log('Order added successfully');
-        // Optionally, reset the form
-        setOrderNumber('');
-        setCustomer('');
-        setOrderType('');
-        setCustomOrderType('');
-        setOrderCategory('');
-        setCustomOrderCategory('');
-        setStyleNumber('');
-        setProductCategory('');
-        setColour('');
-        setSize('');
-        setSmv('');
-        setItalyPO('');
-        setOrderQuantity('');
-        setColourCode('');
-        setProductionPO('');
-        setPsd('');
-        setPed('');
-      })
-      .catch((error) => {
-        console.error('Error adding order: ', error);
-      });
+  
+    try {
+      // Check if the orderNumber already exists
+      const snapshot = await get(orderRef);
+      if (snapshot.exists()) {
+        const orders = snapshot.val();
+        const orderExists = Object.values(orders).some(
+          (order) => order.orderNumber === orderNumber
+        );
+  
+        if (orderExists) {
+          alert(`Order number ${orderNumber} already exists!`);
+          return;
+        }
+      }
+  
+      // Add the new order
+      await push(orderRef, newOrder);
+      console.log('Order added successfully');
+  
+      // Optionally, reset the form
+      setOrderNumber('');
+      setCustomer('');
+      setOrderType('');
+      setCustomOrderType('');
+      setOrderCategory('');
+      setCustomOrderCategory('');
+      setStyleNumber('');
+      setProductCategory('');
+      setColour('');
+      setSize('');
+      setSmv('');
+      setItalyPO('');
+      setOrderQuantity('');
+      setColourCode('');
+      setProductionPO('');
+      setPsd('');
+      setPed('');
+  
+      // Navigate to OrderHome
       navigate('/pages/OrderHome', { replace: true });
+    } catch (error) {
+      console.error('Error adding order: ', error);
+    }
   };
+  
 
   const handleOrderTypeChange = (e) => {
     const selectedType = e.target.value;
@@ -216,9 +205,24 @@ export const Orderdetails = () => {
 
 
       {/* Order details */}
-      <div className='ordholder'>
+      <div className='holder'>
+      <table border={0} width='100%' align="right" >
+        <tr>
+            <th></th>
+            <th width='300px'></th>
+            <th></th>
+            <th className='welImg' width='50px'><img src={welcome} alt="Description of the image"/></th>
+          <th width='100px'><p className='welcomeName'>{user?.username || 'User'}</p></th>
+        </tr>
+        </table>
+      <button className='homeBtn' onClick={navigateHome}>
+              Home
+      </button>
+
       <div className='ordwrapper'>
+
         <div className="transparent-box">
+
           <h2>Add Order</h2>
           <form className='order-form' onSubmit={handleSubmit}>
             <div className='form-group1'>
@@ -356,11 +360,9 @@ export const Orderdetails = () => {
             <button type='submit'>Add</button>
           </form>
         </div>
-      </div>
+       
+      </div> <br></br><br></br>
     </div>
-    <div className="footer">
-        <p>&copy; 2024 Delta Apparels</p>
-      </div>
     </div>
   );
 };

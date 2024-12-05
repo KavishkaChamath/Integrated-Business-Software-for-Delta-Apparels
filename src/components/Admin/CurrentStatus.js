@@ -21,6 +21,47 @@ const LineOperationsTable = () => {
 
   const [matchingBundles, setMatchingBundles] = useState([]);
 
+  const [productionPoOptions, setProductionPoOptions] = useState([]);
+  
+  useEffect(() => {
+    if (orderNumber) {
+      // Call the function to set production Po options when orderNumber changes
+      setProductionPoOptionsFromOrders(ordersData); // Pass the ordersData as a parameter
+    }
+  }, [orderNumber]);
+
+  const setProductionPoOptionsFromOrders = (ordersData) => {
+    console.log(orderNumber); // Debugging the entered order number
+  
+    if (ordersData && orderNumber) {
+      const productionPoList = [];
+      
+      // Loop through the orders data to find the specific order by orderNumber
+      Object.keys(ordersData).forEach(orderId => {
+        const order = ordersData[orderId];
+  
+        // Check if the order matches the entered orderNumber
+        if (order.orderNumber === orderNumber) {
+          if (order.productionPO) {
+            // If productionPo exists, push it into the list
+            productionPoList.push(order.productionPO);
+          }
+        }
+      });
+  
+      // If we found productionPo values, update the state
+      if (productionPoList.length > 0) {
+        setProductionPoOptions(productionPoList);
+        console.log('Available Production PO:', productionPoList);
+      } else {
+        // No production PO found for the entered order number
+        setProductionPoOptions([]);
+        console.log('No Production PO available for this order number');
+      }
+    }
+  };
+  
+
   useEffect(() => {
     // Fetch data from Line Operations node
     const lineOperationsRef = ref(database, 'Line Operations');
@@ -40,6 +81,7 @@ const LineOperationsTable = () => {
       if (snapshot.exists()) {
         console.log('Orders Data:', snapshot.val());
         setOrdersData(snapshot.val());
+        setProductionPoOptionsFromOrders(snapshot.val());
       } else {
         console.log('No data available in Orders');
         setOrdersData({});
@@ -80,7 +122,7 @@ const LineOperationsTable = () => {
     return <p>No data available</p>;
   }
 
-  
+
 
   const handleSearch = async () => {
     if (!orderNumber || !productionPo) {
@@ -175,6 +217,10 @@ const LineOperationsTable = () => {
   };
 
   async function fetchAndDisplayData(orderNumber, productionPo) {
+    if (!orderNumber || !productionPo) {
+      alert('Please enter the order number and production PO.');
+      return;
+    }
     const currentOperationsRef = ref(database, 'currentOperations');
 
     try {
@@ -218,26 +264,37 @@ const LineOperationsTable = () => {
     }
   }
 
+
+
   return (
-    <div>
+
+      <div className="holder">
+            <div>
       <Helmet>
         <title>Order Status</title>
       </Helmet>
       <Titlepic />
       <SignOut />
       <div>
+        <br></br>
         <input
           type="text"
           placeholder="Enter Order Number"
           value={orderNumber}
           onChange={(e) => setOrderNumber(e.target.value)}
         />
-        <input
-          type="text"
-          placeholder="Enter Production PO"
-          value={productionPo}
-          onChange={(e) => setProductionPo(e.target.value)}
-        />
+            {productionPoOptions.length > 0 ? (
+            <select value={productionPo} onChange={(e) => setProductionPo(e.target.value)}>
+              <option value="">Select Production PO</option>
+              {productionPoOptions.map((po, index) => (
+                <option key={index} value={po}>
+                  {po}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p>Checking for Production PO</p>
+          )}
         <select
           value={summaryType}
           onChange={(e) => setSummaryType(e.target.value)}
@@ -246,13 +303,13 @@ const LineOperationsTable = () => {
           <option value="Full Summary">Full Summary</option>
           <option value="Line Summary">Line Summary</option>
         </select>
-        <button onClick={handleSearch}>Search</button>
-        <button onClick={() => fetchAndDisplayData(orderNumber, productionPo)}>Load Current Bundle Data</button>
+        <button className="search" onClick={handleSearch}>Search</button>
+        <button className="load" onClick={() => fetchAndDisplayData(orderNumber, productionPo)}>Load Current Bundle Data</button>
 
       </div>
-
-      <h3>Ongoing Operations Data</h3>
-      <table border="1" style={{ borderCollapse: 'collapse', width: '100%' }}>
+      <div className='OngoingTbl'>
+      <center><h3>Ongoing Operations Data</h3></center>
+      <table border="1" align="center" style={{ borderCollapse: 'collapse', width: '95%' }}>
         <thead>
           <tr>
             <th>Order Number</th>
@@ -313,36 +370,87 @@ const LineOperationsTable = () => {
           )}
         </tbody>
       </table>
-
+      </div>
     {data && (
   <div>
-    <h3>Order Details</h3>
+    <h3>Search Results</h3>
     {summaryType === 'Full Summary' ? (
-                  <div style={{ border: '1px solid black', padding: '10px', marginBottom: '10px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '10px 20px' }}>
-                    
-                    
-                    
-                    <p><strong>Order Number:</strong></p> <p>{orderNumber}</p>
-                    <p><strong>Production PO:</strong></p> <p>{productionPo}</p>
-                    <p><strong>Italy Po:</strong></p> <p>{data?.italyPo || 'N/A'}</p>
-                    <p><strong>Colour:</strong></p> <p>{data?.colour || 'N/A'}</p>
-                    <p><strong>Colour Code:</strong></p> <p>{data?.colourCode || 'N/A'}</p>
-                    <p><strong>Size:</strong></p> <p>{data?.size || 'N/A'}</p>
-                    <p><strong>Style Number:</strong></p> <p>{data?.styleNumber || 'N/A'}</p>
-                    <p><strong>Quantity:</strong></p> <p>{extraData?.orderQuantity || 'N/A'}</p>
-                    <p><strong>Quantity:</strong></p> <p>{extraData?.orderQuantity || 'N/A'}</p>
-                    <p><strong>Order Start Date:</strong></p> <p>{data?.OrderStartDate || 'N/A'}</p>
-                    <p><strong>Order End Date:</strong></p> <p>{data?.endDate || 'N/A'}</p>
-                    <p><strong>1st Quality:</strong></p> <p>{data?.['1stQuality'] || '0'}</p>
-                    <p><strong>2nd Quality:</strong></p> <p>{data?.['2ndQuality'] || '0'}</p>
-                    <p><strong>Rejection:</strong></p> <p>{data?.Rejection || '0'}</p>
-                    <p><strong>Customer:</strong></p> <p>{extraData?.customer || 'N/A'}</p>
-                    <p><strong>Order Category:</strong></p> <p>{extraData?.orderCategory || 'N/A'}</p>
-                    <p><strong>Order Type:</strong></p> <p>{extraData?.orderType || 'N/A'}</p>
-                    <p><strong>SMV:</strong></p> <p>{extraData?.smv || 'N/A'}</p>
-                    <p><strong>Product Category:</strong></p> <p>{extraData?.productCategory || 'N/A'}</p>
-                    <div style={{ marginTop: '20px' }}>
+                  <div className="summary-box"><center>
+                  <form className='order-form'>
+                  <div className='form-group1'>
+                  <p><span style={{marginRight:'52px'}}><label>Order Number : </label></span>
+                    {orderNumber}</p>
+                  </div>
+                  <div className='form-group1'>
+                  <p><span style={{marginRight:'55px'}}><label>Production PO :</label></span>
+                    {productionPo}</p>
+                  </div>
+                  <div className='form-group1'>
+                  <p><span style={{marginRight:'106px'}}><label>Italy PO :</label></span>
+                    {data?.italyPo || 'N/A'}</p>
+                  </div>
+                  <div className='form-group1'>
+                  <p><span style={{marginRight:'115px'}}><label>Colour :</label></span>
+                    {data?.colour || 'N/A'}</p>
+                  </div>
+                  <div className='form-group1'>
+                    <p><span style={{marginRight:'70px'}}><label>Colour Code :</label></span>
+                    {data?.colourCode || 'N/A'}</p>
+                  </div>
+                  <div className='form-group1'>
+                    <p><span style={{marginRight:'135px'}}><label>Size :</label></span>
+                    {data?.size || 'N/A'}</p>
+                  </div>
+                  <div className='form-group1'>
+                    <p><span style={{marginRight:'63px'}}><label>Style Number :</label></span>
+                    {data?.styleNumber || 'N/A'}</p>
+                  </div>
+                  <div className='form-group1'>
+                    <p><span style={{marginRight:'52px'}}><label>Order Quantity :</label></span>
+                    {extraData?.orderQuantity || 'N/A'}</p>
+                  </div>
+                  <div className='form-group1'>
+                    <p><span style={{marginRight:'42px'}}><label>Order Start Date :</label></span>
+                    {data?.OrderStartDate || 'N/A'}</p>
+                  </div>
+                  <div className='form-group1'>
+                  <p><span style={{marginRight:'46px'}}><label>Order End Date :</label></span>
+                    {data?.endDate ? new Date(data.endDate).toISOString().slice(0,10):'Not finsh yet'}</p>
+                  </div>
+                  <div className='form-group1'>
+                  <p><span style={{marginRight:'80px'}}><label>1st Quality :</label></span>
+                    {data?.['1stQuality'] || '0'}</p>
+                  </div>
+                  <div className='form-group1'>
+                    <p><span style={{marginRight:'80px'}}><label>2nd Quality :</label></span>
+                    {data?.['2ndQuality'] || '0'}</p>
+                  </div>
+                  <div className='form-group1'>
+                    <p><span style={{marginRight:'93px'}}><label>Rejection :</label></span>
+                    {data?.Rejection || '0'}</p>
+                  </div>
+                  <div className='form-group1'>
+                    <p><span style={{marginRight:'85px'}}><label>Customer :</label></span>
+                    {extraData?.customer || 'N/A'}</p>
+                  </div>
+                  <div className='form-group1'>
+                  <p><span style={{marginRight:'40px'}}><label>Order Category :</label></span>
+                  {extraData?.orderCategory || 'N/A'}</p>
+                    </div>
+      
+               {/* Order Type Field */}
+               <div className='form-group1'>
+               <p><span style={{marginRight:'73px'}}><label>Order Type :</label></span>
+                       {extraData?.orderType || 'N/A'}</p>
+                    </div>
+      
+                  <div className='form-group1'>
+                    <p><span style={{marginRight:'125px'}}><label>SMV :</label></span>
+                    {extraData?.smv || 'N/A'}</p>
+                  </div>
+                  
+                </form></center>
+                <div style={{ marginTop: '20px' }}>
                     <h3>Cut Details</h3>
                     {cutDetails.length > 0 ? (
                       cutDetails.map((cut, index) => (
@@ -356,9 +464,8 @@ const LineOperationsTable = () => {
                       <p>No cut details available.</p>
                     )}
                   </div>
-      
                   </div>
-                </div>
+                
     ) : (
       // Display data for each line in a separate table
       Object.entries(data).map(([line, details]) => {
@@ -435,6 +542,7 @@ const LineOperationsTable = () => {
         </div>
       )}
 
+  </div>
   </div>
     
   );

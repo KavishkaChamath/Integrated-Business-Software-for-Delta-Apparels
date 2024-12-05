@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import { ref, get, remove, set, query, orderByChild,equalTo } from 'firebase/database';
 import { database } from '../Firebase'; // Ensure correct Firebase configuration import
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
+import { UserContext } from '../components/UserDetails';
+import { useNavigate } from 'react-router-dom';
+import welcome from '../components/Images/img101.png';
 
 const Bundle = () => {
   const [orderNumber, setOrderNumber] = useState('');
@@ -13,6 +16,23 @@ const Bundle = () => {
 
   const [cutNumbers, setCutNumbers] = useState([]); 
   const [noCutNumbers, setNoCutNumbers] = useState(false); 
+
+  const { user } = useContext(UserContext);
+
+  const navigate = useNavigate()
+  const navigateHome = ()=>{
+    if (user && user.occupation) { // Check if `user` and `occupation` exist
+      if (user.occupation === "IT Section") {
+        navigate('/pages/ItHome');
+      } else if (user.occupation === "Admin") {
+        navigate('/pages/Admin');
+      } else {
+        console.log("User occupation not recognized!");
+      }
+    } else {
+      alert("User data is not available. Please try again.");
+    }
+  }
 
   const loadBundles = (orderNumber, selectedCutNumber) => {
     if (!orderNumber || !selectedCutNumber) {
@@ -181,6 +201,7 @@ const Bundle = () => {
       <tr>
         <th>Bundle ID</th>
         <th>Size</th>
+        <th>Colour</th>
         <th>No of Pieces</th>
         <th>Line</th>
         <th>Download Bundle</th>
@@ -199,6 +220,7 @@ const Bundle = () => {
               />
             </td>
             <td>{bundle.size}</td>
+            <td>{bundle.colour}</td>
             <td>{bundle.noOfPieces}</td>
             <td>
               <select
@@ -392,7 +414,19 @@ const retrieveOrderData = async (bundleData) => {
     <div className='holder'>
       <Titlepic/>
       <SignOut/>
-    <h2>Search Cutting Details</h2>
+      <table border={0} width='100%' align="right" >
+        <tr>
+            <th></th>
+            <th width='300px'></th>
+            <th></th>
+            <th className='welImg' width='50px'><img src={welcome} alt="Description of the image"/></th>
+          <th width='100px'><p className='welcomeName'>{user?.username || 'User'}</p></th>
+        </tr>
+        </table>
+      <button className='homeBtn' onClick={navigateHome}>
+              Home
+      </button>
+    <p className='searchTxt'>Search Cutting Details</p>
     <input
       type="text"
       placeholder="Enter Order Number to see available cut numbers"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import { useLocation,useNavigate } from 'react-router-dom';
 import { ref, update } from 'firebase/database';
 import { database } from '../Firebase'; 
@@ -6,6 +6,9 @@ import { database } from '../Firebase';
 import Titlepic from './Titlepic';
 import SignOut from './SignOut';
 import { Helmet } from 'react-helmet';
+
+import { UserContext } from '../components/UserDetails';
+import welcome from '../components/Images/img101.png';
 
 const EditOrder = () => {
   const location = useLocation();
@@ -22,7 +25,7 @@ const EditOrder = () => {
   const [colour, setColour] = useState('');
   const [size, setSize] = useState('');
   const [smv, setSmv] = useState('');
-  const [ithalyPO, setIthalyPO] = useState('');
+  const [italyPO, setItalyPO] = useState('');
   const [orderQuantity, setOrderQuantity] = useState('');
   const [colourCode, setColourCode] = useState('');
   const [productionPO, setProductionPO] = useState('');
@@ -33,6 +36,8 @@ const EditOrder = () => {
 
   const navigate = useNavigate();
 
+  const { user } = useContext(UserContext);
+  
   useEffect(() => {
     if (orderData) {
      setOrderNumber(orderData.orderNumber || '');
@@ -46,14 +51,32 @@ const EditOrder = () => {
      setColour(orderData.colour || '');
      setSize(orderData.size || '');
      setSmv(orderData.smv || '');
-     setIthalyPO(orderData.ithalyPO || '');
+     setItalyPO(orderData.italyPO || '');
      setOrderQuantity(orderData.orderQuantity|| '');
      setColourCode(orderData.colourCode|| '');
      setProductionPO(orderData.productionPO|| '');
      setPsd(orderData.psd|| '');
      setPed(orderData.ped|| '');
+     
     }
   }, [orderData]);
+
+
+  const navigateHome = ()=>{
+    if (user && user.occupation) { // Check if `user` and `occupation` exist
+      if (user.occupation === "IT Section") {
+        navigate('/pages/ItHome');
+      } else if (user.occupation === "Admin") {
+        navigate('/pages/Admin');
+      } else {
+        console.log("User occupation not recognized!");
+      }
+    } else {
+      alert("User data is not available. Please try again.");
+    }
+  }
+
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -70,7 +93,7 @@ const EditOrder = () => {
         colour,
         size,
         smv,
-        ithalyPO,
+        italyPO,
         orderQuantity,
         colourCode,
         productionPO,
@@ -127,7 +150,20 @@ const EditOrder = () => {
       </Helmet>
       <Titlepic/>
       <SignOut/>
-      <div className='ordholder'>
+
+      <div className='holder'>
+      <table border={0} width='100%' align="right" >
+        <tr>
+            <th></th>
+            <th width='300px'></th>
+            <th></th>
+            <th className='welImg' width='50px'><img src={welcome} alt="Description of the image"/></th>
+          <th width='100px'><p className='welcomeName'>{user?.username || 'User'}</p></th>
+        </tr>
+        </table>
+      <button className='homeBtn' onClick={navigateHome}>
+              Home
+      </button>
       <div className='ordwrapper'>
         <div className="transparent-box">
           <h2>Edit Order</h2>
@@ -145,43 +181,25 @@ const EditOrder = () => {
          {/* Order Type Field */}
          <div className='form-group1'>
                 <label>Order Type</label>
-                {showCustomOrderTypeInput ? (
                   <input 
                     type='text' 
                     placeholder='Enter Order Type' 
-                    value={customOrderType} 
-                    onChange={(e) => setCustomOrderType(e.target.value)} 
+                    value={orderType} 
+                    onChange={(e) => setOrderType(e.target.value)} 
                     required 
-                  />
-                ) : (
-                  <select value={orderType} onChange={handleOrderTypeChange} required>
-                    <option value=''>Select Order Type</option>
-                    <option value='External'>External</option>
-                    <option value='Internal'>Internal</option>
-                    <option value='Other'>Other</option>
-                  </select>
-                )}
+                  />              
               </div>
 
                     {/* Order Category Field */}
                     <div className='form-group1'>
                 <label>Order Category</label>
-                {showCustomOrderCategoryInput ? (
                   <input 
                     type='text' 
                     placeholder='Enter Order Category' 
-                    value={customOrderCategory} 
-                    onChange={(e) => setCustomOrderCategory(e.target.value)} 
+                    value={orderCategory} 
+                    onChange={(e) => setOrderCategory(e.target.value)} 
                     required 
-                  />
-                ) : (
-                  <select value={orderCategory} onChange={handleOrderCategoryChange} required>
-                    <option value=''>Select Order Category</option>
-                    <option value='1st Quality'>1st Quality</option>
-                    <option value='Outlet'>Outlet</option>
-                    <option value='Other'>Other</option>
-                  </select>
-                )}
+                  />       
               </div>
             <div className='form-group1'>
               <label>Style Number</label>
@@ -210,8 +228,8 @@ const EditOrder = () => {
             </div>
             <div className='form-group1'>
               <label>Ithaly PO</label>
-              <input type='text' placeholder='Ithaly PO' value={ithalyPO}
-                onChange={(e) => setIthalyPO(e.target.value)} required />
+              <input type='text' placeholder='Italy PO' value={italyPO}
+                onChange={(e) => setItalyPO(e.target.value)} required />
             </div>
             <div className='form-group1'>
               <label>Order Quantity</label>

@@ -70,6 +70,7 @@ background-blend-mode: lighten;
   height: 25px; /* adjust the height to your needs */
   background-color:#6d8cc5;
   padding-bottom: 0.2cm;
+  padding-top: 0.005cm;
   text-align: center;
   color: white;
   font-size: small;
@@ -139,5 +140,14 @@ background-blend-mode: lighten;
   background-color: #0056b3; /* Darker blue when hovering */
 }
 
+.searchTxt{
+  color: #052344;
+  font-size: large;
+  font-weight: 600;
+  margin-left: 5px;
+  margin-bottom: 8px;
+}
 
-
+.lineKey{
+  background-color: #497a8500;
+}

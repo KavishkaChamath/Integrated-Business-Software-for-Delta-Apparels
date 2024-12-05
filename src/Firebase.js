@@ -40,3 +40,6 @@ export const database = getDatabase(app);
 export const firestore = getFirestore(app);
 
 export default app;
+
+//https://KavishkaChamath.github.io/Integrated-Business-Software-for-Delta-Apparels
+//https://delta-aperal.firebaseapp.com

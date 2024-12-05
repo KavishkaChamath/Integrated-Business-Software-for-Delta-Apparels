@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { get, ref } from 'firebase/database';
+import React, { useState,useEffect } from 'react';
+import { get, ref,onValue } from 'firebase/database';
 import { database } from '../../Firebase'; // Adjust this import according to your Firebase configuration file
+import Titlepic from '../Titlepic';
+import SignOut from '../SignOut';
+import { Helmet } from 'react-helmet';
 
 const Summary = () => {
   const [orderNumber, setOrderNumber] = useState('');
@@ -9,6 +12,95 @@ const Summary = () => {
   const [data, setData] = useState(null);
   const [extraData, setExtraData] = useState(null);
   const [cutDetails, setCutDetails] = useState([]);
+
+  const [productionPoOptions, setProductionPoOptions] = useState([]);
+  const [ordersData, setOrdersData] = useState({});
+  const [showSearchResult, setShowSearchResult] = useState(false);
+  
+  useEffect(() => {
+    if (orderNumber) {
+      // Call the function to set production Po options when orderNumber changes
+      setProductionPoOptionsFromOrders(ordersData); // Pass the ordersData as a parameter
+    }
+  }, [orderNumber]);
+
+  const setProductionPoOptionsFromOrders = (ordersData) => {
+    console.log(orderNumber); // Debugging the entered order number
+    if (ordersData && orderNumber) {
+      const productionPoList = [];
+      
+      // Loop through the orders data to find the specific order by orderNumber
+      Object.keys(ordersData).forEach(orderId => {
+        const order = ordersData[orderId];
+  
+        // Check if the order matches the entered orderNumber
+        if (order.orderNumber === orderNumber) {
+          if (order.productionPO) {
+            // If productionPo exists, push it into the list
+            productionPoList.push(order.productionPO);
+          }
+        }
+      });
+  
+      // If we found productionPo values, update the state
+      if (productionPoList.length > 0) {
+        setProductionPoOptions(productionPoList);
+        console.log('Available Production PO:', productionPoList);
+      } else {
+        // No production PO found for the entered order number
+        setProductionPoOptions([]);
+        console.log('No Production PO available for this order number');
+      }
+    }
+  };
+
+  useEffect(() => {
+
+    // Fetch data from Orders node
+    const ordersRef = ref(database, 'orders');
+    const unsubscribeOrders = onValue(ordersRef, (snapshot) => {
+      if (snapshot.exists()) {
+        console.log('Orders Data:', snapshot.val());
+        setOrdersData(snapshot.val());
+        setProductionPoOptionsFromOrders(snapshot.val());
+      } else {
+        console.log('No data available in Orders');
+        setOrdersData({});
+      }
+    });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      unsubscribeOrders();
+    };
+  }, []);
+
+  const [completeOrdersData, setCompleteOrdersData] = useState(null); // State to store orders data
+  const [loading, setLoading] = useState(true); // State to manage loading state
+
+  useEffect(() => {
+    
+    const ordersRef = ref(database, 'Complete Orders'); // Reference to the orders node
+
+    // Fetch data from Firebase when the component loads
+    const unsubscribe = onValue(ordersRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setCompleteOrdersData(snapshot.val()); // Set orders data to state
+      } else {
+        console.log('No data available');
+        setCompleteOrdersData(null); // Set null if no data is available
+      }
+      setLoading(false); // Set loading to false after data is fetched
+    });
+
+    // Cleanup the subscription when the component is unmounted
+    return () => unsubscribe();
+  }, []); // Empty dependency array ensures this effect runs only once when the component mounts
+
+  // Render loading message while data is being fetched
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   const handleSearch = async () => {
     if (!orderNumber || !productionPo) {
@@ -38,6 +130,7 @@ const Summary = () => {
     
       if (ordersSnapshot.exists()) {
         const ordersData = ordersSnapshot.val();
+        setOrdersData(snapshot.val());
         let additionalData = null;
 
         // Loop through orders to find the matching order number and production PO
@@ -62,6 +155,7 @@ const Summary = () => {
       }
 
       await fetchCutDetails(orderNumber,productionPo);
+      setShowSearchResult(true);
 
 
     }
@@ -107,144 +201,281 @@ const Summary = () => {
     }
   };
 
-
   return (
-    <div>
-      <h2>Order Summary</h2>
+    <div className="holder">
       <div>
-        <input
-          type="text"
-          placeholder="Enter Order Number"
-          value={orderNumber}
-          onChange={(e) => setOrderNumber(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Enter Production PO"
-          value={productionPo}
-          onChange={(e) => setProductionPo(e.target.value)}
-        />
-        <select
-          value={summaryType}
-          onChange={(e) => setSummaryType(e.target.value)}
-        >
-          <option value="">Select Summary Type</option>
-          <option value="Full Summary">Full Summary</option>
-          <option value="Line Summary">Line Summary</option>
-        </select>
-        <button onClick={handleSearch}>Search</button>
-      </div>
-
-      {data && (
+        <Titlepic />
+        <SignOut />
+        <Helmet>
+          <title>Order Summary</title>
+        </Helmet>
+        <center>
+          <h2>Order Summary</h2>
+        </center>
         <div>
-          <h3>Order Details</h3>
-          {summaryType === 'Full Summary' ? (
-            <div style={{ border: '1px solid black', padding: '10px', marginBottom: '10px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '10px 20px' }}>
-              {/* <p><strong>Order Number:</strong></p> <p>{orderNumber}</p>
-              <p><strong>Production PO:</strong></p> <p>{productionPo}</p>
-              <p><strong>Italy Po:</strong></p> <p>{data.italyPo}</p>
-              <p><strong>Colour:</strong></p> <p>{data.colour}</p>
-              <p><strong>Colour Code:</strong></p> <p>{data.colourCode}</p>
-              <p><strong>Size:</strong></p> <p>{data.size}</p>
-              <p><strong>Style Number:</strong></p> <p>{data.styleNumber}</p>
-              <p><strong>Quantity:</strong></p> <p>{extraData.orderQuantity}</p>
-              <p><strong>Order Start Date:</strong></p> <p>{data['OrderStartDate']}</p>
-              <p><strong>Order End Date:</strong></p> <p>{data.endDate}</p>
-              <p><strong>1st Quality:</strong></p> <p>{data['1stQuality']}</p>
-              <p><strong>2nd Quality:</strong></p> <p>{data['2ndQuality']}</p>
-              <p><strong>Rejection:</strong></p> <p>{data['Rejection']}</p>
-              <p><strong>Customer:</strong></p> <p>{extraData?.extraData.customer}</p>
-              <p><strong>Order Category:</strong></p> <p>{extraData.orderCategory}</p>
-              <p><strong>Order Type:</strong></p> <p>{extraData.orderType}</p>
-              <p><strong>SMV:</strong></p> <p>{extraData.smv}</p>
-              <p><strong>Product Category:</strong></p> <p>{extraData.productCategory}</p> */}
-              
-              
-              <p><strong>Order Number:</strong></p> <p>{orderNumber}</p>
-              <p><strong>Production PO:</strong></p> <p>{productionPo}</p>
-              <p><strong>Italy Po:</strong></p> <p>{data?.italyPo || 'N/A'}</p>
-              <p><strong>Colour:</strong></p> <p>{data?.colour || 'N/A'}</p>
-              <p><strong>Colour Code:</strong></p> <p>{data?.colourCode || 'N/A'}</p>
-              <p><strong>Size:</strong></p> <p>{data?.size || 'N/A'}</p>
-              <p><strong>Style Number:</strong></p> <p>{data?.styleNumber || 'N/A'}</p>
-              <p><strong>Quantity:</strong></p> <p>{extraData?.orderQuantity || 'N/A'}</p>
-              <p><strong>Quantity:</strong></p> <p>{extraData?.orderQuantity || 'N/A'}</p>
-              <p><strong>Order Start Date:</strong></p> <p>{data?.OrderStartDate || 'N/A'}</p>
-              <p><strong>Order End Date:</strong></p> <p>{data?.endDate || 'N/A'}</p>
-              <p><strong>1st Quality:</strong></p> <p>{data?.['1stQuality'] || '0'}</p>
-              <p><strong>2nd Quality:</strong></p> <p>{data?.['2ndQuality'] || '0'}</p>
-              <p><strong>Rejection:</strong></p> <p>{data?.Rejection || '0'}</p>
-              <p><strong>Customer:</strong></p> <p>{extraData?.customer || 'N/A'}</p>
-              <p><strong>Order Category:</strong></p> <p>{extraData?.orderCategory || 'N/A'}</p>
-              <p><strong>Order Type:</strong></p> <p>{extraData?.orderType || 'N/A'}</p>
-              <p><strong>SMV:</strong></p> <p>{extraData?.smv || 'N/A'}</p>
-              <p><strong>Product Category:</strong></p> <p>{extraData?.productCategory || 'N/A'}</p>
-              <div style={{ marginTop: '20px' }}>
-              <h3>Cut Details</h3>
-              {cutDetails.length > 0 ? (
-                cutDetails.map((cut, index) => (
-                  <div key={index} style={{ border: '1px solid black', padding: '10px', marginBottom: '10px' }}>
-                    <p><strong>Cut Number:</strong> {cut.cutNumber}</p>
-                    <p><strong>No of Pieces:</strong> {cut.noOfPieces}</p>
-                    <p><strong>Ratio:</strong> {cut.ratio}</p>
+          <input
+            type="text"
+            placeholder="Enter Order Number"
+            value={orderNumber}
+            onChange={(e) => setOrderNumber(e.target.value)}
+          />
+          {productionPoOptions.length > 0 ? (
+            <select
+              value={productionPo}
+              onChange={(e) => setProductionPo(e.target.value)}
+            >
+              <option value="">Select Production PO</option>
+              {productionPoOptions.map((po, index) => (
+                <option key={index} value={po}>
+                  {po}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p>Checking for Production PO</p>
+          )}
+          <select
+            value={summaryType}
+            onChange={(e) => setSummaryType(e.target.value)}
+          >
+            <option value="">Select Summary Type</option>
+            <option value="Full Summary">Full Summary</option>
+            <option value="Line Summary">Line Summary</option>
+          </select>
+          <button className="search" onClick={handleSearch}>
+            Search
+          </button>
+        </div>
+  
+        {showSearchResult ? (
+          data && (
+            <div>
+              <center>
+                <h3>Order Details</h3>
+              </center>
+              {summaryType === "Full Summary" ? (
+                <div className="summary-box"><center>
+                  <form className='order-form'>
+            <div className='form-group1'>
+            <p><span style={{marginRight:'52px'}}><label>Order Number : </label></span>
+              {orderNumber}</p>
+            </div>
+            <div className='form-group1'>
+            <p><span style={{marginRight:'55px'}}><label>Production PO :</label></span>
+              {productionPo}</p>
+            </div>
+            <div className='form-group1'>
+            <p><span style={{marginRight:'106px'}}><label>Italy PO :</label></span>
+              {data?.italyPo || 'N/A'}</p>
+            </div>
+            <div className='form-group1'>
+            <p><span style={{marginRight:'115px'}}><label>Colour :</label></span>
+              {data?.colour || 'N/A'}</p>
+            </div>
+            <div className='form-group1'>
+              <p><span style={{marginRight:'70px'}}><label>Colour Code :</label></span>
+              {data?.colourCode || 'N/A'}</p>
+            </div>
+            <div className='form-group1'>
+              <p><span style={{marginRight:'135px'}}><label>Size :</label></span>
+              {data?.size || 'N/A'}</p>
+            </div>
+            <div className='form-group1'>
+              <p><span style={{marginRight:'63px'}}><label>Style Number :</label></span>
+              {data?.styleNumber || 'N/A'}</p>
+            </div>
+            <div className='form-group1'>
+              <p><span style={{marginRight:'52px'}}><label>Order Quantity :</label></span>
+              {extraData?.orderQuantity || 'N/A'}</p>
+            </div>
+            <div className='form-group1'>
+              <p><span style={{marginRight:'42px'}}><label>Order Start Date :</label></span>
+              {data?.OrderStartDate || 'N/A'}</p>
+            </div>
+            <div className='form-group1'>
+            <p><span style={{marginRight:'46px'}}><label>Order End Date :</label></span>
+              {data?.endDate ? new Date(data.endDate).toISOString().slice(0,10):'N/A'}</p>
+            </div>
+            <div className='form-group1'>
+            <p><span style={{marginRight:'80px'}}><label>1st Quality :</label></span>
+              {data?.['1stQuality'] || '0'}</p>
+            </div>
+            <div className='form-group1'>
+              <p><span style={{marginRight:'80px'}}><label>2nd Quality :</label></span>
+              {data?.['2ndQuality'] || '0'}</p>
+            </div>
+            <div className='form-group1'>
+              <p><span style={{marginRight:'93px'}}><label>Rejection :</label></span>
+              {data?.Rejection || '0'}</p>
+            </div>
+            <div className='form-group1'>
+              <p><span style={{marginRight:'85px'}}><label>Customer :</label></span>
+              {extraData?.customer || 'N/A'}</p>
+            </div>
+            <div className='form-group1'>
+            <p><span style={{marginRight:'40px'}}><label>Order Category :</label></span>
+            {extraData?.orderCategory || 'N/A'}</p>
+              </div>
+
+         {/* Order Type Field */}
+         <div className='form-group1'>
+         <p><span style={{marginRight:'73px'}}><label>Order Type :</label></span>
+                 {extraData?.orderType || 'N/A'}</p>
+              </div>
+
+            <div className='form-group1'>
+              <p><span style={{marginRight:'125px'}}><label>SMV :</label></span>
+              {extraData?.smv || 'N/A'}</p>
+            </div>
+            
+          </form></center>
+                  {/* Full Summary Logic */}
+                  <div style={{ marginTop: "20px" }}>
+                    <h3>Cut Details</h3>
+                    {cutDetails.length > 0 ? (
+                      cutDetails.map((cut, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            border: "1px solid black",
+                            padding: "10px",
+                            marginBottom: "10px",
+                          }}
+                        >
+                          <p>
+                            <strong>Cut Number:</strong> {cut.cutNumber}
+                          </p>
+                          <p>
+                            <strong>No of Pieces:</strong> {cut.noOfPieces}
+                          </p>
+                          <p>
+                            <strong>Ratio:</strong> {cut.ratio}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p>No cut details available.</p>
+                    )}
                   </div>
-                ))
+                </div>
               ) : (
-                <p>No cut details available.</p>
+                // Display data for each line in a separate table
+                Object.entries(data).map(([line, details]) => {
+                  const firstQuality = details["1stQuality"] || 0;
+                  const secondQuality = details["2ndQuality"] || 0;
+                  const rejection = details["Rejection"] || 0;
+                  const totalSum = firstQuality + secondQuality + rejection;
+  
+                  // Calculate percentages
+                  const firstQualityPercentage =
+                    totalSum > 0
+                      ? ((firstQuality / totalSum) * 100).toFixed(2)
+                      : "N/A";
+                  const rejectionPercentage =
+                    totalSum > 0
+                      ? ((rejection / totalSum) * 100).toFixed(2)
+                      : "N/A";
+  
+                  return (
+                    <div key={line}>
+                      <h4>{line}</h4>
+                      <table border="1">
+                        <thead>
+                          <tr>
+                            <th>Order Number</th>
+                            <th>Production PO</th>
+                            <th>1st Quality</th>
+                            <th>2nd Quality</th>
+                            <th>Rejection</th>
+                            <th>First Quality Percentage</th>
+                            <th>Rejection Percentage</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>{orderNumber}</td>
+                            <td>{productionPo}</td>
+                            <td>{details["1stQuality"]}</td>
+                            <td>{details["2ndQuality"]}</td>
+                            <td>{details["Rejection"]}</td>
+                            <td>{firstQualityPercentage}%</td>
+                            <td>{rejectionPercentage}%</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })
               )}
             </div>
-
-            </div>
+          )
+        ) : (
+          <div>
+            {completeOrdersData ? (
+              <table
+                border={1}
+                width="95%"
+                align="center"
+                className="summaryTbl"
+              >
+                <thead>
+                  <tr>
+                    <th>Order Number</th>
+                    <th>Size</th>
+                    <th>Style Number</th>
+                    <th>Colour</th>
+                    <th>Colour Code</th>
+                    <th>Production PO</th>
+                    <th>Italy PO</th>
+                    <th>Rejection</th>
+                    <th>1st Quality</th>
+                    <th>2nd Quality</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(completeOrdersData).map((orderNumber) =>
+                    Object.keys(completeOrdersData[orderNumber]).map(
+                      (orderId) => {
+                        const order =
+                          completeOrdersData[orderNumber][orderId];
+                        return (
+                          <tr key={orderId}>
+                            <td>{orderNumber}</td>
+                            <td>{order.size}</td>
+                            <td>{order.styleNumber}</td>
+                            <td>{order.colour}</td>
+                            <td>{order.colourCode}</td>
+                            <td>{order.productionPO}</td>
+                            <td>{order.italyPo}</td>
+                            <td>{order.Rejection}</td>
+                            <td>{order["1stQuality"]}</td>
+                            <td>{order["2ndQuality"]}</td>
+                            <td>{order.OrderStartDate}</td>
+                            <td>
+                              {order.endDate
+                                ? new Date(order.endDate)
+                                    .toISOString()
+                                    .slice(0, 10)
+                                : "N/A"}
+                            </td>
+                          </tr>
+                        );
+                      }
+                    )
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <p>No orders available.</p>
+            )}
           </div>
-          
-          ) : (
-            // Display data for each line in a separate table
-      Object.entries(data).map(([line, details]) => {
-        const firstQuality = details['1stQuality'] || 0;
-        const secondQuality = details['2ndQuality'] || 0;
-        const rejection = details['Rejection'] || 0;
-        const totalSum = firstQuality + secondQuality + rejection;
-
-        // Calculate percentages
-        const firstQualityPercentage = totalSum > 0 ? ((firstQuality / totalSum) * 100).toFixed(2) : 'N/A';
-        const rejectionPercentage = totalSum > 0 ? ((rejection / totalSum) * 100).toFixed(2) : 'N/A';
-
-        return ( // Added the return statement here
-          <div key={line}>
-            <h4>{line}</h4>
-            <table border="1">
-              <thead>
-                <tr>
-                  <th>Order Number</th>
-                  <th>Production PO</th>
-                  <th>1st Quality</th>
-                  <th>2nd Quality</th>
-                  <th>Rejection</th>
-                  <th>First Quality Percentage</th>
-                  <th>Rejection Percentage</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>{orderNumber}</td>
-                  <td>{productionPo}</td>
-                  <td>{details['1stQuality']}</td>
-                  <td>{details['2ndQuality']}</td>
-                  <td>{details['Rejection']}</td>
-                  <td>{firstQualityPercentage}%</td>
-                  <td>{rejectionPercentage}%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        );
-      })
-    )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
+  
 };
 
 export default Summary;

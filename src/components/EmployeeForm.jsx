@@ -1,4 +1,4 @@
-import React, {useState,useRef} from 'react';
+import React, {useState,useRef,useContext} from 'react';
 import './EmployeeForm.css'; 
 import { database } from '../Firebase';
 import { ref, push,query,orderByChild,equalTo,get } from 'firebase/database';
@@ -8,6 +8,8 @@ import './Orderdetails.css';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
+import { UserContext } from '../components/UserDetails';
+import welcome from '../components/Images/img101.png';
 
 
 export const EmployeeForm = () => {
@@ -25,13 +27,41 @@ export const EmployeeForm = () => {
   const [lineAllocation, setLineAllocation] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
 
+  const [customDesignation, setCustomDesignation] = useState('');
+
+  const { user } = useContext(UserContext);
   
   const qrRef = useRef();
   const navigate = useNavigate();
 
+  const navigateHome = ()=>{
+    if (user && user.occupation) { // Check if `user` and `occupation` exist
+      if (user.occupation === "IT Section") {
+        navigate('/pages/ItHome');
+      } else if (user.occupation === "Admin") {
+        navigate('/pages/Admin');
+      } else {
+        console.log("User occupation not recognized!");
+      }
+    } else {
+      alert("User data is not available. Please try again.");
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault();
-  
+
+    if (!validatePhoneNumber(contactNumber1)) {
+      alert("Invalid Contact Number 1. Please enter a valid 10-digit number.");
+      return; // Exit the function without submitting
+    }
+
+    if (!validateDateJoined(dateJoined)) {
+      return; // Exit the function if date validation fails
+
+    }
+ 
+    const finalDesignation = designation === 'Other' ? customDesignation : designation;
     const employeeRef = ref(database, 'employees');
     
     // Query to check if an employee with the same employeeNumber exists
@@ -53,7 +83,7 @@ export const EmployeeForm = () => {
             contactNumber2,
             dateJoined,
             gender,
-            designation,
+            designation: finalDesignation, 
             workType,
             lineAllocation
           };
@@ -127,20 +157,22 @@ export const EmployeeForm = () => {
   };
 
   const validateDateJoined = (date) => {
-    const today = new Date().toISOString().split("T")[0]; // Get today's date in yyyy-mm-dd format
-    const minDate = "2000-01-01"; // Define the minimum allowed date
+    const today = new Date().toISOString().split("T")[0];
+    const minDate = "2000-01-01";
   
-    // Check if the date is in the future
     if (date > today) {
       alert("Date of Joined cannot be a future date.");
       setDateJoined(''); // Optionally reset the date field
+      return false;
     }
-    // Check if the date is before 2000-01-01
-    else if (date < minDate) {
+    if (date < minDate) {
       alert("Date of Joined cannot be before 2000-01-01.");
       setDateJoined(''); // Optionally reset the date field
+      return false;
     }
+    return true; // Validation passed
   };
+  
   
   // Validation function
 const validateEmployeeNumber = (number) => {
@@ -175,18 +207,62 @@ const validateEmployeeNumber = (number) => {
   // };
   
   const handleGenerateQRCode = () => {
+    if(employeeNumber==="" || callingName===""){
+      alert("Add deatils to the download QR")
+      return
+    }
     setShowQRCode(true);
     setTimeout(handleDownloadQRCode, 100); // Delay to ensure QR code renders before download
   };
 
+  // const handleDownloadQRCode = () => {
+  //   const canvas = qrRef.current.querySelector('canvas');
+  //   const url = canvas.toDataURL('image/png');
+  //   const a = document.createElement('a');
+  //   a.href = url;
+  //   a.download = `${employeeNumber}_${callingName}_QRCode.png`;
+  //   a.click();
+  // };
+
   const handleDownloadQRCode = () => {
-    const canvas = qrRef.current.querySelector('canvas');
-    const url = canvas.toDataURL('image/png');
+    const qrCanvas = qrRef.current.querySelector('canvas');
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+  
+    const canvasSize = 256; // Size of the QR code
+    const padding = 20; // Space between QR code and text
+    const textHeight = 30; // Space allocated for the text
+  
+    // Set canvas dimensions
+    tempCanvas.width = canvasSize;
+    tempCanvas.height = canvasSize + padding + textHeight;
+  
+    // Fill background with white color
+    tempCtx.fillStyle = '#FFFFFF';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+  
+    // Draw the QR code onto the canvas
+    tempCtx.drawImage(qrCanvas, 0, 0, canvasSize, canvasSize);
+  
+    // Add the employee number text below the QR code
+    tempCtx.font = '16px Arial';
+    tempCtx.fillStyle = '#000000'; // Black text
+    tempCtx.textAlign = 'center';
+    tempCtx.fillText(
+      `Employee Number: ${employeeNumber}`,
+      canvasSize / 2, // Center horizontally
+      canvasSize + padding // Position below the QR code
+    );
+  
+    // Convert to image and download
+    const url = tempCanvas.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = url;
     a.download = `${employeeNumber}_${callingName}_QRCode.png`;
     a.click();
   };
+  
+  
 
   const generateQRCodeValue = () => {
     return `Employee Number: ${employeeNumber}, Calling Name: ${callingName}`;
@@ -199,8 +275,21 @@ const validateEmployeeNumber = (number) => {
       </Helmet>
       <Titlepic/>
       <SignOut/>
+
       {/* Header with photo and gradient background */}
-      <div className='empholder'>
+      <div className='holder'>
+      <table border={0} width='100%' align="right" >
+        <tr>
+            <th></th>
+            <th width='300px'></th>
+            <th></th>
+            <th className='welImg' width='50px'><img src={welcome} alt="Description of the image"/></th>
+          <th width='100px'><p className='welcomeName'>{user?.username || 'User'}</p></th>
+        </tr>
+        </table>
+      <button className='homeBtn' onClick={navigateHome}>
+              Home
+      </button>
       <div className='empwrapper'>
         <div className="transparent-box">
           <h2>Add Employee</h2>
@@ -255,7 +344,7 @@ const validateEmployeeNumber = (number) => {
                 setDateJoined(e.target.value);
                 handleDateInput(e);
               }}
-              onBlur={() => validateDateJoined(dateJoined)} 
+              // onBlur={() => validateDateJoined(dateJoined)} 
               required 
               max="9999-12-31"
             />
@@ -271,27 +360,35 @@ const validateEmployeeNumber = (number) => {
             </div>
           </div>
           <div className='form-group2'>
-            <label>Designation</label>
+          <label>Designation</label>
+          {designation === 'Other' ? (
+            // Render input box if 'Other' is selected
+            <input
+              type='text'
+              value={customDesignation}
+              onChange={(e) => setCustomDesignation(e.target.value)}
+              placeholder='Enter Designation'
+              required
+            />
+          ) : (
+            // Render select dropdown otherwise
             <select
-                value={designation}
-                onChange={(e) => setDesignation(e.target.value)}
-                required
-              >
-                <option value=''>Select Designation</option>
-                <option value='Manager'>Manager</option>
-                <option value='Machine Operator'>Machine Operator</option>
-                <option value='Tranning Machine Operator'>tranning Machine Operator</option>
-                <option value='Quality Checker'>Quality Checker</option>
-                <option value='Helper'>Helper</option>
-                <option value=''></option>
-                <option value=''></option>
-                <option value=''></option>
-                <option value=''></option>
-                <option value=''></option>
-                <option value=''></option>
-              {/* Add options as needed */}
+              value={designation}
+              onChange={(e) => setDesignation(e.target.value)}
+              required
+            >
+              <option value=''>Select Designation</option>
+              <option value='Manager'>Manager</option>
+              <option value='Machine Operator'>Machine Operator</option>
+              <option value='Tranning Machine Operator'>Tranning Machine Operator</option>
+              <option value='Quality Checker'>Quality Checker</option>
+              <option value='Helper'>Helper</option>
+              <option value='Staff'>Staff</option>
+              <option value='Other'>Other</option>
             </select>
-          </div>
+          )}
+        </div>
+
             <div className='form-group2'>
             <label>Direct/ Indirect</label>
             <div className='radio-group'>
@@ -302,7 +399,7 @@ const validateEmployeeNumber = (number) => {
     value='Direct' 
     checked={workType === 'Direct'} 
     onChange={() => handleCheckboxChange('Direct')}
-    required // This makes it a required field
+    
   />
   <label htmlFor='direct'>Direct</label>
 
@@ -313,7 +410,7 @@ const validateEmployeeNumber = (number) => {
     value='Indirect' 
     checked={workType === 'Indirect'} 
     onChange={() => handleCheckboxChange('Indirect')}
-    required
+    
   />
   <label htmlFor='indirect'>Indirect</label>
 
@@ -325,7 +422,7 @@ const validateEmployeeNumber = (number) => {
             <select
                 value={lineAllocation}
                 onChange={(e) => setLineAllocation(e.target.value)}
-                required
+                
               >
                 <option value='' disabled>Select a line</option>
                 <option value='Line 1'>Line 1</option>
@@ -334,12 +431,12 @@ const validateEmployeeNumber = (number) => {
                 <option value='Line 4'>Line 4</option>
                 <option value='Line 5'>Line 5</option>
                 <option value='Line 6'>Line 6</option>
-                <option value='Line 7'>Line 1</option>
-                <option value='Line 8'>Line 2</option>
-                <option value='Line 9'>Line 3</option>
-                <option value='Line 10'>Line 4</option>
-                <option value='Line 11'>Line 5</option>
-                <option value='Line 12'>Line 6</option>
+                <option value='Line 7'>Line 7</option>
+                <option value='Line 8'>Line 8</option>
+                <option value='Line 9'>Line 9</option>
+                <option value='Line 10'>Line 10</option>
+                <option value='Line 11'>Line 11</option>
+                <option value='Line 12'>Line 12</option>
               {/* Add options as needed */}
             </select>
           </div>
@@ -358,13 +455,10 @@ const validateEmployeeNumber = (number) => {
         </div>
       )}
          
-        </form>
+        </form><br></br><br></br>
       </div>
       </div>
     </div>
-    <div className="footer">
-        <p>&copy; 2024 Delta Apparels</p>
-      </div>
     </div>
   );
 };

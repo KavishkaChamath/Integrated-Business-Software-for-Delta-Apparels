@@ -19,11 +19,22 @@ const CheckPauseTime = () => {
     { id: 11, pauseTime: 0 },
     { id: 12, pauseTime: 0 },
   ]);
-  const currentDate = new Date().toISOString().split('T')[0]; // Format current date as YYYY-MM-DD
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isCurrentDataDisplayed, setIsCurrentDataDisplayed] = useState(true);
+
+  const today = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const formattedDate = today.toLocaleDateString('en-US', options);
 
   useEffect(() => {
-    const dailyUpdatesRef = ref(database, `dailyUpdates/${currentDate}`);
-    
+    if (isCurrentDataDisplayed) {
+      fetchPauseTimeData(selectedDate);
+    }
+  }, [selectedDate]);
+
+  const fetchPauseTimeData = (date) => {
+    const dailyUpdatesRef = ref(database, `dailyUpdates/${date}`);
+
     const unsubscribe = onValue(dailyUpdatesRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -35,11 +46,32 @@ const CheckPauseTime = () => {
           };
         });
         setLines(updatedLines);
+        setIsCurrentDataDisplayed(false); // Hide current data when new date is searched
+      } else {
+        setLines(lines.map(line => ({ ...line, pauseTime: 0 }))); // Reset pause times if no data found
       }
     });
 
     return () => unsubscribe(); // Cleanup the listener on unmount
-  }, [currentDate]);
+  };
+
+  const handleDateChange = (event) => {
+    setSelectedDate(event.target.value);
+  };
+
+  const validateDateJoined = (date) => {
+    const today = new Date().toISOString().split("T")[0]; // Get today's date in yyyy-mm-dd format
+  
+    // Check if the date is in the future
+    if (date > today) {
+      alert("Cannot check pause time of future date.");
+      setSelectedDate(''); // Optionally reset the date field
+    }
+  };
+
+  const handleCheckPauseTime = () => {
+    fetchPauseTimeData(selectedDate);
+  };
 
   const formatPauseTime = (pauseTimeInSeconds) => {
     const hours = Math.floor(pauseTimeInSeconds / 3600);
@@ -50,18 +82,35 @@ const CheckPauseTime = () => {
   };
 
   return (
-    <div>
-        <Titlepic/>
-        <SignOut/>
-    <div className="pause-time-container">
-      <h2>Pause Time by Line</h2>
-      {lines.map((line) => (
-        <div key={line.id}>
-          <span>Line {line.id}: </span>
-          <span>Pause Time: {formatPauseTime(line.pauseTime)}</span>
+    <div className="holder">
+        <div>
+      <Titlepic />
+      <SignOut />
+      <div className="pause-time-container">
+        <center><h2>Pause Time by Line</h2></center>
+        <div className="date">
+          <h3>Today is: {formattedDate}</h3>
         </div>
-      ))}
-    </div> 
+        <div>
+          <label htmlFor="date-picker">Select Date:</label>
+          <input 
+            type="date"
+            id="date-picker"
+            value={selectedDate}
+            onChange={handleDateChange}
+            onBlur={() => validateDateJoined(selectedDate)} 
+          />
+          <button className="pauseTime" onClick={handleCheckPauseTime}>Check Pause Time</button>
+        </div>
+        {lines.map((line) => (
+          <div className="pause"key={line.id}>
+            <p><b><span></span>Line {line.id}: </b>
+            <span>Pause Time: {formatPauseTime(line.pauseTime)}</span></p>
+          </div>
+        ))}
+      </div>
+      <br></br>
+    </div>
     </div>
   );
 };
